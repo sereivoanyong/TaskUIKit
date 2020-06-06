@@ -1,0 +1,61 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "DiffableDataSources",
+        "repositoryURL": "https://github.com/ra1028/DiffableDataSources",
+        "state": {
+          "branch": null,
+          "revision": "581b4f8d1634e83c6b33caaafdc6a115a74650c3",
+          "version": "0.4.0"
+        }
+      },
+      {
+        "package": "DifferenceKit",
+        "repositoryURL": "https://github.com/ra1028/DifferenceKit.git",
+        "state": {
+          "branch": null,
+          "revision": "14c66681e12a38b81045f44c6c29724a0d4b0e72",
+          "version": "1.1.5"
+        }
+      },
+      {
+        "package": "DZNEmptyDataSet",
+        "repositoryURL": "https://github.com/sereivoanyong/DZNEmptyDataSet",
+        "state": {
+          "branch": "master",
+          "revision": "41d83880ebe1a817945e8543b6dd38141aa257c9",
+          "version": null
+        }
+      },
+      {
+        "package": "MJRefresh",
+        "repositoryURL": "https://github.com/sereivoanyong/MJRefresh",
+        "state": {
+          "branch": "master",
+          "revision": "7defbab4bd92a5c3be5ffd8f4b857732cb9aae58",
+          "version": null
+        }
+      },
+      {
+        "package": "SwiftKit",
+        "repositoryURL": "https://github.com/sereivoanyong/SwiftKit",
+        "state": {
+          "branch": "master",
+          "revision": "3fbb645c4debafa236284ca7c71437728aacce68",
+          "version": null
+        }
+      },
+      {
+        "package": "SwiftyJSON",
+        "repositoryURL": "https://github.com/SwiftyJSON/SwiftyJSON",
+        "state": {
+          "branch": null,
+          "revision": "2b6054efa051565954e1d2b9da831680026cd768",
+          "version": "5.0.0"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
