@@ -7,24 +7,45 @@
 import UIKit
 import DZNEmptyDataSet
 
-public protocol TaskReloadable: AnyObject {
+/// A failure that is used to give users useful information.
+public enum Failure: LocalizedError {
   
-  func reloadTask(animated: Bool)
+  /// Request failed locally (e.g. no internet connection). Check`URLError.Code` to see all possible errors
+  case url(URLError)
+  /// Request succeded but server returns status code that is not in `validResponseStatusCodeRange` (e.g. unauthorized, server busy, not found...).
+  case validation(Data, HTTPURLResponse, Error?)
+  /// Request succeded  with valid `statusCode` but response data could not be serialized to `Response`.
+  case serialization(Error)
+  
+  /// `failure`, `reloadAction`
+  public static var transform: ((Self, (UIButton) -> Void) -> EmptyDataSetAdapter?)?
+  
+  public var errorDescription: String? {
+    switch self {
+    case .url(let error):
+      let key = "TaskUIKit.URLError.\(error.errorCode).Description"
+      return NSLocalizedString(key, value: error.localizedDescription, comment: "")
+      
+    case .validation(_, let response, let error):
+      if let errorDescription = (error as? LocalizedError)?.errorDescription {
+        return errorDescription
+      }
+      let key = "TaskUIKit.HTTPURLResponse.\(response.statusCode).Description"
+      return NSLocalizedString(key, value: HTTPURLResponse.localizedString(forStatusCode: response.statusCode), comment: "")
+      
+    case .serialization(let error):
+      let key = "TaskUIKit.JSONSerialization.Description"
+      return NSLocalizedString(key, value: error.localizedDescription, comment: "")
+    }
+  }
+}
+
+public var kDefaultTaskResponseValidationHandler: (Data, HTTPURLResponse) throws -> Bool = { _, response in
+  return response._statusCode.isSuccess
 }
 
 @available(iOS 11.0, *)
-open class TaskViewController<Response, Contents>: UIViewController, TaskReloadable {
-  
-  /// A failure that is used to give users useful information.
-  public enum Failure: Error {
-    
-    /// Request failed locally (e.g. no internet connection). Check`URLError.Code` to see all possible errors
-    case url(URLError)
-    /// Request succeded but server returns status code that is not in `validResponseStatusCodeRange` (e.g. unauthorized, server busy, not found...).
-    case invalid(ValidationError)
-    /// Request succeded  with valid `statusCode` but response value could not be transform to `Response`.
-    case transforming(Error)
-  }
+open class TaskViewController<Response, Contents>: UIViewController {
   
   open private(set) var currentTask: URLSessionDataTask?
   open private(set) var currentFailure: Failure?
@@ -40,16 +61,8 @@ open class TaskViewController<Response, Contents>: UIViewController, TaskReloada
   
   open var session: URLSession = .shared
   
-  /// Only `ValidationError` can be thrown
-  open var responseValidationHandler: (HTTPURLResponse) throws -> Void = { response in
-    if 200...299 ~= response.statusCode {
-      return
-    }
-    throw ValidationError(response: response)
-  }
-  
   public let responseTransformer: ResponseTransformer<Response, Contents>
-  open var emptyDataSetAdapterProvider: ((Failure) -> DZNEmptyDataSetAdapter?)?
+  open var responseValidationHandler: ((Data, HTTPURLResponse) throws -> Bool)?
   
   open var loadsTaskOnViewDidLoad: Bool = true
   
@@ -135,21 +148,27 @@ open class TaskViewController<Response, Contents>: UIViewController, TaskReloada
   
   final internal func startTask(with urlRequest: URLRequest, transformer: ResponseTransformer<Response, Contents>, completion: @escaping (Result<(Response, Contents), Failure>) -> Void) {
     assert(isViewLoaded, "startTask can only be called after view is loaded.")
-    let task = session.dataTask(with: urlRequest) { result in
+    let task = session.dataTask(with: urlRequest) { [weak self] result in
+      guard let self = self else {
+        return
+      }
       DispatchQueue.main.async {
         switch result {
         case .success(let (data, response)):
           do {
-            try self.responseValidationHandler(response)
-            do {
-              let (response, contents) = try transformer.transform(data, response)
-              completion(.success((response, contents)))
-            } catch {
-              completion(.failure(.transforming(error)))
+            let isValid = try self.responseValidationHandler?(data, response) ?? kDefaultTaskResponseValidationHandler(data, response)
+            if isValid {
+              do {
+                let (response, contents) = try transformer.transform(data, response)
+                completion(.success((response, contents)))
+              } catch {
+                completion(.failure(.serialization(error)))
+              }
+            } else {
+              completion(.failure(.validation(data, response, nil)))
             }
           } catch {
-            assert(error is ValidationError, "Only `ValidationError` can be thrown")
-            completion(.failure(.invalid(error as! ValidationError)))
+            completion(.failure(.validation(data, response, error)))
           }
           
         case .failure(let error):
@@ -213,47 +232,18 @@ open class TaskViewController<Response, Contents>: UIViewController, TaskReloada
   }
   
   open func emptyDataSetAdapter(for failure: Failure) -> DZNEmptyDataSetAdapter {
-    if let adapter = emptyDataSetAdapterProvider?(failure) {
+    if let adapter = Failure.transform?(failure, { [unowned self] _ in self.reloadTask(animated: true) }) {
       return adapter
     }
-    let buttonTitleColor = UIApplication.shared.keyWindow?.tintColor ?? view.tintColor ?? .systemBlue
-    switch failure {
-    case .url(let error):
-      if let error = error as? DZNEmptyDataSetAdapter {
-        return error
-      }
-      let adapter = EmptyDataSetAdapter(reloadable: self)
-      adapter.title = NSAttributedString(string: error.localizedDescription, attributes: nil)
-      adapter.buttonTitles = [.normal: NSAttributedString(string: NSLocalizedString("Reload", comment: ""), attributes: [.foregroundColor: buttonTitleColor])]
-      adapter.buttonActionHandler = { [unowned self] _ in
-        self.reloadTask(animated: true)
-      }
-      return adapter
-      
-    case .invalid(let error):
-      if let error = error as? DZNEmptyDataSetAdapter {
-        return error
-      }
-      let adapter = EmptyDataSetAdapter(reloadable: self)
-      adapter.title = NSAttributedString(string: error.localizedDescription, attributes: nil)
-      adapter.buttonTitles = [.normal: NSAttributedString(string: NSLocalizedString("Reload", comment: ""), attributes: [.foregroundColor: buttonTitleColor])]
-      adapter.buttonActionHandler = { [unowned self] _ in
-        self.reloadTask(animated: true)
-      }
-      return adapter
-      
-    case .transforming(let error):
-      let adapter = EmptyDataSetAdapter(reloadable: self)
-      adapter.title = NSAttributedString(string: NSLocalizedString("Invalid Response", comment: ""), attributes: nil)
-      #if !RELEASE
-      adapter.description_ = NSAttributedString(string: error.localizedDescription, attributes: nil)
-      #endif
-      adapter.buttonTitles = [.normal: NSAttributedString(string: NSLocalizedString("Reload", comment: ""), attributes: [.foregroundColor: buttonTitleColor])]
-      adapter.buttonActionHandler = { [unowned self] _ in
-        self.reloadTask(animated: true)
-      }
-      return adapter
+    let adapter = EmptyDataSetAdapter()
+    adapter.title = failure.errorDescription.map { NSAttributedString(string: $0, attributes: nil) }
+    adapter.buttonTitles = [.normal: NSAttributedString(string: NSLocalizedString("Reload", comment: ""), attributes: [
+      .foregroundColor: UIApplication.shared.keyWindow?.tintColor ?? view.tintColor ?? .systemBlue
+    ])]
+    adapter.buttonActionHandler = { [unowned self] _ in
+      self.reloadTask(animated: true)
     }
+    return adapter
   }
   
   // MARK: DefaultEmptyDataSetAdapter

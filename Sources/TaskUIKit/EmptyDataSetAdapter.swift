@@ -14,17 +14,9 @@ extension UIControl.State: Hashable {
   }
 }
 
-public protocol EmptyDataSetAdapterConvertible: DZNEmptyDataSetSource, DZNEmptyDataSetDelegate {
-  
-  var reloadable: TaskReloadable { get }
-}
-
 public typealias DZNEmptyDataSetAdapter = DZNEmptyDataSetSource & DZNEmptyDataSetDelegate
 
-open class EmptyDataSetAdapter: NSObject, EmptyDataSetAdapterConvertible {
-  
-  public unowned let reloadable: TaskReloadable
-  open var reloadButtonAction: ((TaskReloadable, UIButton) -> Void)?
+open class EmptyDataSetAdapter: NSObject {
   
   open var title: NSAttributedString?
   open var description_: NSAttributedString?
@@ -51,10 +43,6 @@ open class EmptyDataSetAdapter: NSObject, EmptyDataSetAdapterConvertible {
   open var didAppear: (() -> Void)?
   open var willDisappear: (() -> Void)?
   open var didDisappear: (() -> Void)?
-  
-  public init(reloadable: TaskReloadable) {
-    self.reloadable = reloadable
-  }
 }
 
 extension EmptyDataSetAdapter: DZNEmptyDataSetSource {
@@ -139,7 +127,7 @@ extension EmptyDataSetAdapter: DZNEmptyDataSetDelegate {
   }
   
   open func emptyDataSet(_ scrollView: UIScrollView, didTap button: UIButton) {
-    reloadButtonAction?(reloadable, button) ?? buttonActionHandler?(button)
+    buttonActionHandler?(button)
   }
   
   open func emptyDataSetWillAppear(_ scrollView: UIScrollView) {

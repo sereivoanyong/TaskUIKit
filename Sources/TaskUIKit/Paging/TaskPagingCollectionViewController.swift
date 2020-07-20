@@ -187,7 +187,7 @@ open class TaskPagingCollectionViewController<Response, Section, Item>: TaskView
   }
   
   open func emptyDataSetAdapterWhenEmpty() -> EmptyDataSetAdapter {
-    let adapter = EmptyDataSetAdapter(reloadable: self)
+    let adapter = EmptyDataSetAdapter()
     adapter.title = NSAttributedString(string: NSLocalizedString("Nothing is here.", comment: ""), attributes: nil)
     return adapter
   }
