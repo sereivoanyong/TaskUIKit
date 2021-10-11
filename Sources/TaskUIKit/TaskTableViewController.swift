@@ -103,6 +103,5 @@ open class TaskTableViewController<Response, Content>: TaskViewController<Respon
 
   open override func reloadData(_ content: Content?, for page: Int) {
     tableView.reloadData()
-    super.reloadData(content, for: page)
   }
 }

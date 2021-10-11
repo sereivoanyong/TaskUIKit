@@ -10,7 +10,7 @@ import UIKit
 /// `responseConfiguration`
 /// `urlRequest(for:)`
 /// `store(_:for:)`
-/// `reloadData(_:for:)` (Optional)
+/// `reloadData(_:for:)`
 
 open class TaskScrollViewController<Response, Content>: TaskViewController<Response, Content> {
 
