@@ -24,6 +24,10 @@ public struct ResponseConfiguration<Response, Content> {
     self.init(transform:  { data, _ in try decoder.decode(Response.self, from: data) }, contentProvider: contentProvider, pagingProvider: pagingProvider)
   }
 
+  public init<Paging: PagingProtocol>(decoder: JSONDecoder, contentAt contentKeyPath: KeyPath<Response, Content>, pagingAt pagingKeyPath: KeyPath<Response, Paging?>) where Response: Decodable {
+    self.init(transform:  { data, _ in try decoder.decode(Response.self, from: data) }, contentProvider: { $0[keyPath: contentKeyPath] }, pagingProvider: { $0[keyPath: pagingKeyPath] })
+  }
+
   public func response(_ data: Data, _ response: HTTPURLResponse) throws -> Response {
     try transform(data, response)
   }

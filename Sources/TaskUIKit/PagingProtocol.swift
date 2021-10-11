@@ -10,5 +10,5 @@ public protocol PagingProtocol {
 
   var page: Int { get }
 
-  func hasNext() -> Bool
+  func hasNextPage() -> Bool
 }

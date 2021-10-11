@@ -18,7 +18,6 @@ import MJRefresh
 @available(iOS 11.0, *)
 open class TaskViewController<Response, Content>: UIViewController, EmptyViewStateProviding, EmptyViewDataSource {
 
-  open private(set) var currentTask: URLSessionDataTask?
   open private(set) var currentPaging: PagingProtocol?
   open private(set) var currentFailure: Failure?
 
@@ -34,7 +33,7 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
     fatalError()
   }
 
-  open var session: URLSession = .shared
+  lazy open private(set) var session: URLSession = defaultSession()
 
   open var loadsTaskOnViewDidLoad: Bool = true
 
@@ -52,12 +51,13 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
     refreshingScrollView
   }
 
-  private var _emptyView: EmptyView?
+  open private(set) var emptyViewIfLoaded: EmptyView?
   lazy open private(set) var emptyView: EmptyView = {
     let emptyView = EmptyView()
     emptyView.stateProvider = self
     emptyView.dataSource = self
     emptyView.translatesAutoresizingMaskIntoConstraints = false
+    emptyViewIfLoaded = emptyView
     if let loadingIndicatorView = _loadingIndicatorView {
       view.insertSubview(emptyView, belowSubview: loadingIndicatorView)
     } else {
@@ -94,7 +94,7 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
   // MARK: Init / Deinit
 
   deinit {
-    currentTask?.cancel()
+    session.invalidateAndCancel()
   }
 
   // MARK: View Lifecycle
@@ -104,27 +104,32 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
 
     if loadsTaskOnViewDidLoad {
       // We do not need to reset as this is an initial load.
-      reloadTask(reset: false, animated: true)
+      reloadTasks(reset: false, animated: true)
     }
   }
 
   // MARK: Networking
 
+  open func defaultSession() -> URLSession {
+    URLSession(configuration: .default, delegate: nil, delegateQueue: nil)
+  }
+
   open func urlRequest(for page: Int) -> URLRequest {
     fatalError("\(#function) has not been implemented")
   }
 
-  @objc private func resetAndReloadTaskWithAnimation() {
-    reloadTask(reset: true, animated: true)
+  @objc private func resetAndReloadTasksWithAnimation() {
+    reloadTasks(reset: true, animated: true)
   }
 
-  /// Reload task.
+  /// Reload tasks.
   ///
   /// - Parameters:
   ///   - reset: A flag whether to reset content and failure
-  ///   - animated: Apply to loading indicator view (not refresh control nor load more control)
-  open func reloadTask(reset: Bool, animated: Bool) {
+  ///   - animated: Apply to loading indicator view (not refresh control nor load-more control)
+  open func reloadTasks(reset: Bool, animated: Bool) {
     if reset {
+      currentPaging = nil
       currentFailure = nil
       store(nil, for: 1)
       reloadData(nil, for: 1)
@@ -132,58 +137,62 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
     if animated {
       loadingIndicatorView.startAnimating()
     }
-    startTask(page: 1)
+    startTasks(page: 1)
   }
 
-  final private func startTask(page: Int) {
-    assert(isViewLoaded, "startTask can only be called after view is loaded.")
-    currentTask?.cancel()
-    let task = session.dataTask(with: urlRequest(for: page)) { [weak self] result in
+  /// Subclasses must call `tasksDidComplete(page:result:)` in main queue on completion.
+  open func startTasks(page: Int) {
+    assert(isViewLoaded, "`\(#function)` can only be called after view is loaded.")
+    session.invalidateAndCancel()
+    session = defaultSession()
+    session.dataTask(with: urlRequest(for: page)) { [weak self] result in
       guard let self = self else {
         return
       }
       switch result {
       case .success(let (data, response)):
-        let result: Result<(Response, Content), Failure>
-        if self.responseConfiguration.acceptableStatusCodes.contains(response.statusCode) {
-          do {
-            try self.validate(data, response)
-            do {
-              let response = try self.responseConfiguration.transform(data, response)
-              let content = self.responseConfiguration.contentProvider(response)
-              result = .success((response, content))
-            } catch {
-              result = .failure(.serialization(error))
-            }
-          } catch {
-            result = .failure(.validation(data, response, error))
-          }
-        } else {
-          result = .failure(.unacceptance(data, response))
-        }
+        let result = self.result(data: data, response: response)
         DispatchQueue.main.async {
-          self.taskDidComplete(page: page, result: result)
+          self.tasksDidComplete(page: page, result: result)
         }
 
       case .failure(let error):
         if error.code != .cancelled {
           DispatchQueue.main.async {
-            self.taskDidComplete(page: page, result: .failure(.url(error)))
+            self.tasksDidComplete(page: page, result: .failure(.url(error)))
           }
         }
       }
-    }
-    task.resume()
-    currentTask = task
+    }.resume()
   }
 
-  open func validate(_ data: Data, _ response: HTTPURLResponse) throws {
+  open func result(data: Data, response: HTTPURLResponse) -> Result<(Response, Content), Failure> {
+    let result: Result<(Response, Content), Failure>
+    if self.responseConfiguration.acceptableStatusCodes.contains(response.statusCode) {
+      do {
+        try self.validate(data: data, response: response)
+        do {
+          let response = try self.responseConfiguration.transform(data, response)
+          let content = self.responseConfiguration.contentProvider(response)
+          result = .success((response, content))
+        } catch {
+          result = .failure(.serialization(error))
+        }
+      } catch {
+        result = .failure(.validation(data, response, error))
+      }
+    } else {
+      result = .failure(.unacceptance(data, response))
+    }
+    return result
+  }
 
+  open func validate(data: Data, response: HTTPURLResponse) throws {
   }
 
   // MARK: Task Lifecycle
 
-  open func taskDidComplete(page: Int, result: Result<(Response, Content), Failure>) {
+  open func tasksDidComplete(page: Int, result: Result<(Response, Content), Failure>) {
     loadingIndicatorView.stopAnimating()
     refreshingScrollView?.refreshControl?.endRefreshing()
 
@@ -197,10 +206,10 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
 
       currentPaging = responseConfiguration.pagingProvider(response)
       if let scrollView = pagingScrollView {
-        let hasNextPage = currentPaging?.hasNext() ?? false
+        let hasNextPage = currentPaging?.hasNextPage() ?? false
         if hasNextPage && scrollView.mj_footer == nil {
           let footer = MJRefreshAutoNormalFooter() { [unowned self] in
-            startTask(page: page + 1)
+            startTasks(page: (currentPaging?.page ?? 1) + 1)
           }
           footer.stateLabel?.isHidden = true
           footer.isRefreshingTitleHidden = true
@@ -219,18 +228,22 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
       }
 
       currentFailure = nil
+      emptyViewIfLoaded?.reload()
       store(content, for: page)
       reloadData(content, for: page)
 
     case .failure(let failure):
+      pagingScrollView?.mj_footer?.endRefreshing()
+
       currentFailure = failure
+      emptyView.reload()
       store(nil, for: page)
       reloadData(nil, for: page)
     }
   }
 
   @objc private func didPullToRefresh(_ sender: UIRefreshControl) {
-    reloadTask(reset: false, animated: false)
+    reloadTasks(reset: false, animated: false)
   }
 
   // MARK: Data
@@ -249,7 +262,7 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
     emptyView.title = NSLocalizedString("Unable to Load", comment: "")
     emptyView.message = failure.errorDescription
     emptyView.button.setTitle(NSLocalizedString("Reload", comment: ""), for: .normal)
-    emptyView.button.addTarget(self, action: #selector(resetAndReloadTaskWithAnimation), for: .touchUpInside)
+    emptyView.button.addTarget(self, action: #selector(resetAndReloadTasksWithAnimation), for: .touchUpInside)
   }
 
   open func configureEmptyViewForEmpty(_ emptyView: EmptyView) {
@@ -294,7 +307,7 @@ extension TaskViewController {
 extension URLSession {
 
   final fileprivate func dataTask(with request: URLRequest, completion: @escaping (Result<(Data, HTTPURLResponse), URLError>) -> Void) -> URLSessionDataTask {
-    return dataTask(with: request) { data, response, error in
+    dataTask(with: request) { data, response, error in
       if let error = error {
         completion(.failure(error as! URLError))
       } else {
