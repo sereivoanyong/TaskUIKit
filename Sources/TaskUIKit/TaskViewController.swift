@@ -291,22 +291,10 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
   }
 }
 
-extension TaskViewController {
-
-  final public func store<Objects>(_ content: Content?, for page: Int, in objects: inout Objects) where Content: Sequence, Objects: RangeReplaceableCollection, Content.Element == Objects.Element {
-    if page == 1 {
-      objects = content.map { $0 as? Objects ?? Objects.init($0) } ?? .init()
-    } else {
-      if let content = content {
-        objects.append(contentsOf: content)
-      }
-    }
-  }
-}
-
 extension URLSession {
 
-  final fileprivate func dataTask(with request: URLRequest, completion: @escaping (Result<(Data, HTTPURLResponse), URLError>) -> Void) -> URLSessionDataTask {
+  @usableFromInline
+  func dataTask(with request: URLRequest, completion: @escaping (Result<(Data, HTTPURLResponse), URLError>) -> Void) -> URLSessionDataTask {
     dataTask(with: request) { data, response, error in
       if let error = error {
         completion(.failure(error as! URLError))
