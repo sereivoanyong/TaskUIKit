@@ -69,7 +69,7 @@ open class TaskTableViewController<Response, Content>: TaskViewController<Respon
 
     tableView.frame = view.bounds
     tableView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-    view.addSubview(tableView)
+    view.insertSubview(tableView, at: 0)
   }
 
   // MARK: Table View Lifecycle

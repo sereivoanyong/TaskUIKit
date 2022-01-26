@@ -40,7 +40,7 @@ open class TaskScrollViewController<Response, Content>: TaskViewController<Respo
 
     scrollView.frame = view.bounds
     scrollView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-    view.addSubview(scrollView)
+    view.insertSubview(scrollView, at: 0)
   }
 
   // MARK: Scroll View Lifecycle

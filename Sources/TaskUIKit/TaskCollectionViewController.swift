@@ -69,7 +69,7 @@ open class TaskCollectionViewController<Response, Content>: TaskViewController<R
 
     collectionView.frame = view.bounds
     collectionView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-    view.addSubview(collectionView)
+    view.insertSubview(collectionView, at: 0)
   }
 
   // MARK: Collection View Lifecycle
