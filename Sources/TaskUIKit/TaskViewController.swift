@@ -118,7 +118,7 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
     fatalError("\(#function) has not been implemented")
   }
 
-  @objc private func resetAndReloadTasksWithAnimation() {
+  @objc open func resetAndReloadTasksWithAnimation() {
     reloadTasks(reset: true, animated: true)
   }
 
