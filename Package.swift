@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
   name: "TaskUIKit",
+  defaultLocalization: "en",
   platforms: [
     .iOS(.v11),
   ],

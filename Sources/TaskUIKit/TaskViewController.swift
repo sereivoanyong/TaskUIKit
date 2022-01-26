@@ -259,14 +259,14 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
   // MARK: Empty View
 
   open func configureEmptyView(_ emptyView: EmptyView, for failure: Failure) {
-    emptyView.title = NSLocalizedString("Unable to Load", comment: "")
+    emptyView.title = NSLocalizedString("Unable to Load", bundle: Bundle.module, comment: "")
     emptyView.message = failure.errorDescription
-    emptyView.button.setTitle(NSLocalizedString("Reload", comment: ""), for: .normal)
+    emptyView.button.setTitle(NSLocalizedString("Reload", bundle: Bundle.module, comment: ""), for: .normal)
     emptyView.button.addTarget(self, action: #selector(resetAndReloadTasksWithAnimation), for: .touchUpInside)
   }
 
   open func configureEmptyViewForEmpty(_ emptyView: EmptyView) {
-    emptyView.title = NSLocalizedString("No Content", comment: "")
+    emptyView.title = NSLocalizedString("No Content", bundle: Bundle.module, comment: "")
   }
 
   // MARK:
