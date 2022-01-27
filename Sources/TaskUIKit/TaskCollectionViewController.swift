@@ -84,6 +84,9 @@ open class TaskCollectionViewController<Response, Content>: TaskViewController<R
     collectionView.showsVerticalScrollIndicator = true
     collectionView.dataSource = self as? UICollectionViewDataSource
     collectionView.delegate = self as? UICollectionViewDelegate
+    collectionView.prefetchDataSource = self as? UICollectionViewDataSourcePrefetching
+    collectionView.dragDelegate = self as? UICollectionViewDragDelegate
+    collectionView.dropDelegate = self as? UICollectionViewDropDelegate
     self.collectionView = collectionView
   }
 
