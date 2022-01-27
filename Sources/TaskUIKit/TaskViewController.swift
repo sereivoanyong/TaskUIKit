@@ -204,7 +204,7 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
         scrollView.refreshControl = refreshControl
       }
 
-      currentPaging = responseConfiguration.pagingProvider(response)
+      currentPaging = responseConfiguration.pagingProvider?(response)
       if let scrollView = pagingScrollView {
         let hasNextPage = currentPaging?.hasNextPage() ?? false
         if hasNextPage && scrollView.mj_footer == nil {
