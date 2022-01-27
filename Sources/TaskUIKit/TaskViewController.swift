@@ -58,7 +58,7 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
     emptyView.dataSource = self
     emptyView.translatesAutoresizingMaskIntoConstraints = false
     emptyViewIfLoaded = emptyView
-    if let loadingIndicatorView = _loadingIndicatorView {
+    if let loadingIndicatorView = loadingIndicatorViewIfLoaded {
       view.insertSubview(emptyView, belowSubview: loadingIndicatorView)
     } else {
       view.addSubview(emptyView)
@@ -72,7 +72,7 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
     return emptyView
   }()
 
-  private var _loadingIndicatorView: UIActivityIndicatorView?
+  open private(set) var loadingIndicatorViewIfLoaded: UIActivityIndicatorView?
   lazy open private(set) var loadingIndicatorView: UIActivityIndicatorView = {
     let style: UIActivityIndicatorView.Style
     if #available(iOS 13.0, *) {
@@ -82,6 +82,7 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
     }
     let indicatorView = UIActivityIndicatorView(style: style)
     indicatorView.translatesAutoresizingMaskIntoConstraints = false
+    loadingIndicatorViewIfLoaded = indicatorView
     view.addSubview(indicatorView)
 
     NSLayoutConstraint.activate([
