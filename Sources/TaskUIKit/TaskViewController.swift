@@ -146,25 +146,27 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
     assert(isViewLoaded, "`\(#function)` can only be called after view is loaded.")
     session.invalidateAndCancel()
     session = defaultSession()
-    session.dataTask(with: urlRequest(for: page)) { [weak self] result in
+    session.dataTask(with: urlRequest(for: page)) { [weak self] urlResult in
       guard let self = self else {
         return
       }
-      switch result {
+      switch urlResult {
       case .success(let (data, response)):
         let result = self.result(data: data, response: response)
-        DispatchQueue.main.async {
-          self.tasksDidComplete(page: page, result: result)
-        }
+        self.process(page: page, result: result)
 
-      case .failure(let error):
-        if error.code != .cancelled {
-          DispatchQueue.main.async {
-            self.tasksDidComplete(page: page, result: .failure(.url(error)))
-          }
+      case .failure(let urlError):
+        if urlError.code != .cancelled {
+          self.process(page: page, result: .failure(.url(urlError)))
         }
       }
     }.resume()
+  }
+
+  open func process(page: Int, result: Result<(Response, Content), Failure>) {
+    DispatchQueue.main.async { [unowned self] in
+      tasksDidComplete(page: page, result: result)
+    }
   }
 
   open func result(data: Data, response: HTTPURLResponse) -> Result<(Response, Content), Failure> {
