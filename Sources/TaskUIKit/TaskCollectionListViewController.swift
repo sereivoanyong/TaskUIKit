@@ -6,16 +6,18 @@
 
 import UIKit
 
-open class TaskCollectionListViewController<Response, Object>: TaskCollectionViewController<Response, [Object]> {
+open class TaskCollectionListViewController<Response, Collection>: TaskCollectionViewController<Response, Collection> where Collection: Swift.RangeReplaceableCollection, Collection.Index == Int {
 
-  open var objects: [Object] = []
+  public typealias Object = Collection.Element
+
+  open var objects: Collection = .init()
 
   open override var isContentNilOrEmpty: Bool {
     return objects.isEmpty
   }
 
-  open override func store(_ newObjects: [Object]?, for page: Int) {
-    let newObjects = newObjects ?? []
+  open override func store(_ newObjects: Collection?, for page: Int) {
+    let newObjects = newObjects ?? .init()
     if page == 1 {
       objects = newObjects
     } else {
