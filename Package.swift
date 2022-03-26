@@ -1,5 +1,4 @@
-// swift-tools-version:5.5
-
+// swift-tools-version:5.6
 import PackageDescription
 
 let package = Package(
@@ -13,7 +12,7 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/CoderMJLee/MJRefresh", .upToNextMajor(from: "3.7.5")),
-    .package(url: "https://github.com/sereivoanyong/SwiftUIKit", .branch("master")),
+    .package(url: "https://github.com/sereivoanyong/SwiftUIKit", branch: "master"),
   ],
   targets: [
     .target(name: "TaskUIKit", dependencies: ["MJRefresh", .product(name: "UIKitExtra", package: "SwiftUIKit")]),
