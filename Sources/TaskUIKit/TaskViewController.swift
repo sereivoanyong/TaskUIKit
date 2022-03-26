@@ -231,16 +231,16 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
       }
 
       currentFailure = nil
-      emptyViewIfLoaded?.reload()
       store(content, for: page)
+      emptyView.reload()
       reloadData(content, for: page)
 
     case .failure(let failure):
       pagingScrollView?.mj_footer?.endRefreshing()
 
       currentFailure = failure
-      emptyView.reload()
       store(nil, for: page)
+      emptyView.reload()
       reloadData(nil, for: page)
     }
   }
