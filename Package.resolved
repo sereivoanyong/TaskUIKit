@@ -1,34 +1,32 @@
 {
-  "object": {
-    "pins": [
-      {
-        "package": "DTPhotoViewerController",
-        "repositoryURL": "https://github.com/tungvoduc/DTPhotoViewerController",
-        "state": {
-          "branch": null,
-          "revision": "be2b855fc04fae5750e021c04a8f6d0d4ab18f92",
-          "version": "3.1.1"
-        }
-      },
-      {
-        "package": "MJRefresh",
-        "repositoryURL": "https://github.com/CoderMJLee/MJRefresh",
-        "state": {
-          "branch": null,
-          "revision": "f9db27ea41c7e3f5002be57bbf8fd5bf30f7346e",
-          "version": "3.7.5"
-        }
-      },
-      {
-        "package": "SwiftUIKit",
-        "repositoryURL": "https://github.com/sereivoanyong/SwiftUIKit",
-        "state": {
-          "branch": "master",
-          "revision": "2f267588421df077d9e11375467a65814b6e73c8",
-          "version": null
-        }
+  "pins" : [
+    {
+      "identity" : "dtphotoviewercontroller",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tungvoduc/DTPhotoViewerController",
+      "state" : {
+        "revision" : "be2b855fc04fae5750e021c04a8f6d0d4ab18f92",
+        "version" : "3.1.1"
       }
-    ]
-  },
-  "version": 1
+    },
+    {
+      "identity" : "mjrefresh",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/CoderMJLee/MJRefresh",
+      "state" : {
+        "revision" : "b9c5464d5480001b7e3b0cdf4c34f4a683d3acd5",
+        "version" : "3.7.6"
+      }
+    },
+    {
+      "identity" : "uikitswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sereivoanyong/UIKitSwift",
+      "state" : {
+        "branch" : "main",
+        "revision" : "15a41ab4fb25bc78f0a959cf7b6c8d68e85fd416"
+      }
+    }
+  ],
+  "version" : 2
 }
