@@ -1,31 +1,21 @@
 //
 //  TaskCollectionViewController.swift
 //
-//  Created by Sereivoan Yong on 2/6/20.
+//  Created by Sereivoan Yong on 3/1/22.
 //
 
 import UIKit
 
 /// Subclass must implement these functions:
-/// `responseConfiguration`
-/// `urlRequest(for:)`
-/// `store(_:for:)`
-/// `reloadData(_:for:)` (Optional)
-
-open class TaskCollectionViewController<Response, Content>: TaskViewController<Response, Content> {
-
-  /// Default is `UICollectionView.self`. Custom class must implement `init(frame:collectionViewLayout:)`.
-  open class var collectionViewClass: UICollectionView.Type {
-    UICollectionView.self
-  }
-
-  /// Default is `UICollectionViewFlowLayout.self`.
-  open class var collectionViewLayoutClass: UICollectionViewLayout.Type {
-    UICollectionViewFlowLayout.self
-  }
+/// `startTasks(page:completion:)`
+/// `contents`
+/// `store(_:page:)`
+open class TaskCollectionViewController<Contents>: TaskViewController<Contents> {
 
   private var _collectionView: UICollectionView!
-  open var collectionView: UICollectionView {
+
+  /// `loadCollectionView()` and `makeCollectionViewLayout()` are not called if we assign it from nib
+  open weak var collectionView: UICollectionView! {
     get {
       if _collectionView == nil {
         loadCollectionView()
@@ -36,46 +26,35 @@ open class TaskCollectionViewController<Response, Content>: TaskViewController<R
     set {
       precondition(_collectionView == nil, "Collection view can only be set before it is loaded.")
       _collectionView = newValue
+      collectionViewDidLoad()
     }
   }
 
-  public let collectionViewLayout: UICollectionViewLayout
+  private var _collectionViewLayout: UICollectionViewLayout!
+  open var collectionViewLayout: UICollectionViewLayout {
+    if let _collectionViewLayout {
+      return _collectionViewLayout
+    }
+    if let _collectionView {
+      _collectionViewLayout = _collectionView.collectionViewLayout
+    } else {
+      _collectionViewLayout = makeCollectionViewLayout()
+    }
+    return _collectionViewLayout
+  }
 
   open override var refreshingScrollView: UIScrollView? {
-    collectionView
-  }
-
-  // MARK: Initializers
-
-  public init(collectionViewLayout: UICollectionViewLayout) {
-    self.collectionViewLayout = collectionViewLayout
-    super.init(nibName: nil, bundle: nil)
-  }
-
-  public override init(nibName: String?, bundle: Bundle?) {
-    self.collectionViewLayout = Self.collectionViewLayoutClass.init()
-    super.init(nibName: nibName, bundle: bundle)
-  }
-
-  public required init?(coder: NSCoder) {
-    self.collectionViewLayout = Self.collectionViewLayoutClass.init()
-    super.init(coder: coder)
-  }
-
-  // MARK: View Lifecycle
-
-  open override func viewDidLoad() {
-    super.viewDidLoad()
-
-    collectionView.frame = view.bounds
-    collectionView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-    view.insertSubview(collectionView, at: 0)
+    return collectionView
   }
 
   // MARK: Collection View Lifecycle
 
+  open func makeCollectionViewLayout() -> UICollectionViewLayout {
+    fatalError()
+  }
+
   open func loadCollectionView() {
-    let collectionView = Self.collectionViewClass.init(frame: UIScreen.main.bounds, collectionViewLayout: collectionViewLayout)
+    let collectionView = UICollectionView(frame: UIScreen.main.bounds, collectionViewLayout: collectionViewLayout)
     collectionView.backgroundColor = .clear
     collectionView.preservesSuperviewLayoutMargins = true
     collectionView.alwaysBounceHorizontal = false
@@ -91,20 +70,31 @@ open class TaskCollectionViewController<Response, Content>: TaskViewController<R
   }
 
   open var collectionViewIfLoaded: UICollectionView? {
-    _collectionView
+    return _collectionView
   }
 
   open func collectionViewDidLoad() {
-
   }
 
   open var isCollectionViewLoaded: Bool {
-    _collectionView != nil
+    return _collectionView != nil
+  }
+
+  // MARK: View Lifecycle
+
+  open override func viewDidLoad() {
+    super.viewDidLoad()
+
+    if collectionView.superview == nil {
+      collectionView.frame = view.bounds
+      collectionView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+      view.insertSubview(collectionView, at: 0)
+    }
   }
 
   // MARK: Data
 
-  open override func reloadData(_ content: Content?, for page: Int) {
+  open override func reloadData(_ contents: Contents?, page: Int) {
     collectionView.reloadData()
   }
 }

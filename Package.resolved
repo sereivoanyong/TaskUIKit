@@ -1,15 +1,6 @@
 {
   "pins" : [
     {
-      "identity" : "dtphotoviewercontroller",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tungvoduc/DTPhotoViewerController",
-      "state" : {
-        "revision" : "be2b855fc04fae5750e021c04a8f6d0d4ab18f92",
-        "version" : "3.1.1"
-      }
-    },
-    {
       "identity" : "mjrefresh",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/CoderMJLee/MJRefresh",
@@ -19,12 +10,12 @@
       }
     },
     {
-      "identity" : "uikitswift",
+      "identity" : "swiftkit",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/sereivoanyong/UIKitSwift",
+      "location" : "https://github.com/sereivoanyong/SwiftKit",
       "state" : {
         "branch" : "main",
-        "revision" : "15a41ab4fb25bc78f0a959cf7b6c8d68e85fd416"
+        "revision" : "efc3a632ac2ca9534ca64282a94df888fe00c294"
       }
     }
   ],

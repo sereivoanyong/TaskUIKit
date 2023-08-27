@@ -6,49 +6,49 @@
 
 import UIKit
 import UIKitExtra
+import Combine
 import MJRefresh
 
 /// Subclass must implement these functions:
-/// `isContentNilOrEmpty`
-/// `responseConfiguration`
-/// `urlRequest(for:)`
-/// `store(_:for:)`
-/// `reloadData(_:for:)`
+/// `startTasks(page:completion:)`
+/// `contents`
+/// `store(_:page:)`
+/// `reloadData(_:page:)`
+open class TaskViewController<Contents>: UIViewController, EmptyViewStateProviding, EmptyViewDataSource {
 
-@available(iOS 11.0, *)
-open class TaskViewController<Response, Content>: UIViewController, EmptyViewStateProviding, EmptyViewDataSource {
+  private var isFirstViewAppear: Bool = true
+
+  private var isContentsNilOrEmpty: Bool {
+    if let contents {
+      if let contents = contents as? any Collection, contents.isEmpty {
+        return true
+      }
+      return false
+    }
+    return true
+  }
+
+  open private(set) var cancellables: Set<AnyCancellable> = [] {
+    willSet {
+      cancelAllTasks()
+    }
+  }
 
   open private(set) var currentPaging: PagingProtocol?
-  open private(set) var currentFailure: Failure?
+  open private(set) var currentError: Error?
 
-  /**
-   ```
-   // For non-list
-   object == nil
-   // For list
-   objects.isEmpty
-   ```
-   */
-  open var isContentNilOrEmpty: Bool {
+  open var contents: Contents? {
     fatalError()
   }
 
-  lazy open private(set) var session: URLSession = defaultSession()
+  open private(set) var isLoading: Bool = false
 
-  open var loadsTaskOnViewDidLoad: Bool = true
-
-  open var responseConfiguration: ResponseConfiguration<Response, Content> {
-    fatalError()
-  }
+  /// Setting this property after `viewIsAppearing(_:)` has no effect
+  open var loadsTaskOnViewAppear: Bool = true
 
   /// Returns the scroll view for pull-to-refresh
   open var refreshingScrollView: UIScrollView? {
-    nil
-  }
-
-  /// Returns the scroll view for load-more (paging)
-  open var pagingScrollView: UIScrollView? {
-    refreshingScrollView
+    return nil
   }
 
   open private(set) var emptyViewIfLoaded: EmptyView?
@@ -95,29 +95,30 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
   // MARK: Init / Deinit
 
   deinit {
-    session.invalidateAndCancel()
+    cancelAllTasks()
   }
 
   // MARK: View Lifecycle
 
-  open override func viewDidLoad() {
-    super.viewDidLoad()
+  open override func viewIsAppearing(_ animated: Bool) {
+    super.viewIsAppearing(animated)
 
-    if loadsTaskOnViewDidLoad {
-      // We do not need to reset as this is an initial load.
-      reloadTasks(reset: false, animated: true)
+    if isFirstViewAppear {
+      isFirstViewAppear = false
+      if isContentsNilOrEmpty {
+        if loadsTaskOnViewAppear {
+          // We do not need to reset as this is an initial load.
+          reloadTasks(reset: false, animated: true)
+        }
+      } else {
+        if let refreshingScrollView {
+          configureRefreshControl(for: refreshingScrollView)
+        }
+      }
     }
   }
 
   // MARK: Networking
-
-  open func defaultSession() -> URLSession {
-    URLSession(configuration: .default, delegate: nil, delegateQueue: nil)
-  }
-
-  open func urlRequest(for page: Int) -> URLRequest {
-    fatalError("\(#function) has not been implemented")
-  }
 
   @objc open func resetAndReloadTasksWithAnimation() {
     reloadTasks(reset: true, animated: true)
@@ -131,118 +132,93 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
   open func reloadTasks(reset: Bool, animated: Bool) {
     if reset {
       currentPaging = nil
-      currentFailure = nil
-      store(nil, for: 1)
-      reloadData(nil, for: 1)
+      currentError = nil
+      store(nil, page: 1)
+      reloadData(nil, page: 1)
     }
     if animated {
       loadingIndicatorView.startAnimating()
     }
-    startTasks(page: 1)
+    startTasks()
   }
 
-  /// Subclasses must call `tasksDidComplete(page:result:)` in main queue on completion.
-  open func startTasks(page: Int) {
+  final public func startTasks(page: Int = 1) {
     assert(isViewLoaded, "`\(#function)` can only be called after view is loaded.")
-    session.invalidateAndCancel()
-    session = defaultSession()
-    session.dataTask(with: urlRequest(for: page)) { [weak self] urlResult in
-      guard let self = self else {
-        return
-      }
-      switch urlResult {
-      case .success(let (data, response)):
-        let result = self.result(data: data, response: response)
-        self.process(page: page, result: result)
-
-      case .failure(let urlError):
-        if urlError.code != .cancelled {
-          self.process(page: page, result: .failure(.url(urlError)))
-        }
-      }
-    }.resume()
-  }
-
-  open func process(page: Int, result: Result<(Response, Content), Failure>) {
-    DispatchQueue.main.async { [unowned self] in
-      tasksDidComplete(page: page, result: result)
+    cancelAllTasks()
+    isLoading = true
+    emptyView.reload()
+    cancellables = startTasks(page: page) { [weak self] result in
+      guard let self else { return }
+      isLoading = false
+      tasksDidComplete(result: result, page: page)
     }
   }
 
-  open func result(data: Data, response: HTTPURLResponse) -> Result<(Response, Content), Failure> {
-    let result: Result<(Response, Content), Failure>
-    if self.responseConfiguration.acceptableStatusCodes.contains(response.statusCode) {
-      do {
-        try self.validate(data: data, response: response)
-        do {
-          let response = try self.responseConfiguration.transform(data, response)
-          let content = self.responseConfiguration.contentProvider(response)
-          result = .success((response, content))
-        } catch {
-          result = .failure(.serialization(error))
-        }
-      } catch {
-        result = .failure(.validation(data, response, error))
-      }
-    } else {
-      result = .failure(.unacceptance(data, response))
-    }
-    return result
-  }
-
-  open func validate(data: Data, response: HTTPURLResponse) throws {
+  /// `completionHandler` must be called on main queue.
+  @discardableResult
+  open func startTasks(page: Int, completion: @escaping (Result<(Contents, PagingProtocol?), Error>) -> Void) -> Set<AnyCancellable> {
+    fatalError("Subclass must override")
   }
 
   // MARK: Task Lifecycle
 
-  open func tasksDidComplete(page: Int, result: Result<(Response, Content), Failure>) {
+  open func tasksDidComplete(result: Result<(Contents, PagingProtocol?), Error>, page: Int) {
     loadingIndicatorView.stopAnimating()
+    let refreshingScrollView = refreshingScrollView
     refreshingScrollView?.refreshControl?.endRefreshing()
 
     switch result {
-    case .success(let (response, content)):
-      if let scrollView = refreshingScrollView, scrollView.refreshControl == nil {
-        let refreshControl = UIRefreshControl()
-        refreshControl.addTarget(self, action: #selector(didPullToRefresh(_:)), for: .valueChanged)
-        scrollView.refreshControl = refreshControl
-      }
+    case .success(let (content, paging)):
+      currentPaging = paging
+      if let refreshingScrollView {
+        configureRefreshControl(for: refreshingScrollView)
 
-      currentPaging = responseConfiguration.pagingProvider?(response)
-      if let scrollView = pagingScrollView {
-        let hasNextPage = currentPaging?.hasNextPage() ?? false
-        if hasNextPage && scrollView.mj_footer == nil {
-          let footer = MJRefreshAutoNormalFooter() { [unowned self] in
-            startTasks(page: (currentPaging?.page ?? 1) + 1)
-          }
-          footer.stateLabel?.isHidden = true
-          footer.isRefreshingTitleHidden = true
-          scrollView.mj_footer = footer
-        }
-
-        if let footer = scrollView.mj_footer {
-          if hasNextPage {
+        if let paging, paging.hasNextPage() {
+          if let footer = refreshingScrollView.mj_footer {
             footer.endRefreshing()
-            footer.isHidden = false
+            footer.isHidden = true
           } else {
+            let footer = MJRefreshAutoNormalFooter { [unowned self] in
+              startTasks(page: paging.page + 1)
+            }
+            footer.stateLabel?.isHidden = true
+            footer.isRefreshingTitleHidden = true
+            refreshingScrollView.mj_footer = footer
+          }
+        } else {
+          if let footer = refreshingScrollView.mj_footer {
             footer.endRefreshingWithNoMoreData()
             footer.isHidden = true
           }
         }
       }
 
-      currentFailure = nil
-      store(content, for: page)
+      currentError = nil
+      store(content, page: page)
       emptyView.reload()
-      reloadData(content, for: page)
+      reloadData(content, page: page)
 
-    case .failure(let failure):
-      pagingScrollView?.mj_footer?.endRefreshing()
+    case .failure(let error):
+      refreshingScrollView?.mj_footer?.endRefreshing()
 
-      currentFailure = failure
-      store(nil, for: page)
+      currentError = error
+      store(nil, page: page)
       emptyView.reload()
-      reloadData(nil, for: page)
+      reloadData(nil, page: page)
     }
+  }
+
+  open func cancelAllTasks() {
+    for cancellable in cancellables {
+      cancellable.cancel()
+    }
+  }
+
+  private func configureRefreshControl(for scrollView: UIScrollView) {
+    guard scrollView.refreshControl == nil else { return }
+    let refreshControl = UIRefreshControl()
+    refreshControl.addTarget(self, action: #selector(didPullToRefresh(_:)), for: .valueChanged)
+    scrollView.refreshControl = refreshControl
   }
 
   @objc private func didPullToRefresh(_ sender: UIRefreshControl) {
@@ -251,19 +227,19 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
 
   // MARK: Data
 
-  open func store(_ content: Content?, for page: Int) {
+  open func store(_ contents: Contents?, page: Int) {
     fatalError("\(#function) has not been implemented")
   }
 
-  open func reloadData(_ content: Content?, for page: Int) {
+  open func reloadData(_ contents: Contents?, page: Int) {
     fatalError("\(#function) has not been implemented")
   }
 
   // MARK: Empty View
 
-  open func configureEmptyView(_ emptyView: EmptyView, for failure: Failure) {
+  open func configureEmptyView(_ emptyView: EmptyView, for error: Error) {
     emptyView.title = NSLocalizedString("Unable to Load", bundle: Bundle.module, comment: "")
-    emptyView.message = failure.errorDescription
+    emptyView.message = error.localizedDescription
     emptyView.button.setTitle(NSLocalizedString("Reload", bundle: Bundle.module, comment: ""), for: .normal)
     emptyView.button.addTarget(self, action: #selector(resetAndReloadTasksWithAnimation), for: .touchUpInside)
   }
@@ -274,36 +250,25 @@ open class TaskViewController<Response, Content>: UIViewController, EmptyViewSta
 
   // MARK:
 
-  final public func state(for emptyView: EmptyView) -> EmptyView.State? {
-    if !isContentNilOrEmpty {
+  public func state(for emptyView: EmptyView) -> EmptyView.State? {
+    if isLoading {
       return nil
     }
-    if let currentFailure = currentFailure {
-      return .error(currentFailure)
+    if !isContentsNilOrEmpty {
+      return nil
+    }
+    if let currentError {
+      return .error(currentError)
     }
     return .empty
   }
 
-  final public func emptyView(_ emptyView: EmptyView, configureContentFor state: EmptyView.State) {
+  public func emptyView(_ emptyView: EmptyView, configureContentFor state: EmptyView.State) {
     switch state {
     case .error(let error):
-      configureEmptyView(emptyView, for: error as! Failure)
+      configureEmptyView(emptyView, for: error)
     case .empty:
       configureEmptyViewForEmpty(emptyView)
-    }
-  }
-}
-
-extension URLSession {
-
-  @usableFromInline
-  func dataTask(with request: URLRequest, completion: @escaping (Result<(Data, HTTPURLResponse), URLError>) -> Void) -> URLSessionDataTask {
-    dataTask(with: request) { data, response, error in
-      if let error = error {
-        completion(.failure(error as! URLError))
-      } else {
-        completion(.success((data!, response as! HTTPURLResponse)))
-      }
     }
   }
 }

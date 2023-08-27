@@ -7,14 +7,15 @@
 import UIKit
 
 /// Subclass must implement these functions:
-/// `responseConfiguration`
-/// `urlRequest(for:)`
-/// `store(_:for:)`
-/// `reloadData(_:for:)`
-
-open class TaskScrollViewController<Response, Content>: TaskViewController<Response, Content> {
+/// `startTasks(page:completion:)`
+/// `contents`
+/// `store(_:page:)`
+/// `reloadData(_:page:)`
+open class TaskScrollViewController<Contents>: TaskViewController<Contents> {
 
   private var _scrollView: UIScrollView!
+
+  /// `loadScrollView()` is not called if we assign it from nib
   open var scrollView: UIScrollView {
     get {
       if _scrollView == nil {
@@ -26,21 +27,12 @@ open class TaskScrollViewController<Response, Content>: TaskViewController<Respo
     set {
       precondition(_scrollView == nil, "Scroll view can only be set before it is loaded.")
       _scrollView = newValue
+      scrollViewDidLoad()
     }
   }
 
   open override var refreshingScrollView: UIScrollView? {
-    scrollView
-  }
-
-  // MARK: View Lifecycle
-
-  open override func viewDidLoad() {
-    super.viewDidLoad()
-
-    scrollView.frame = view.bounds
-    scrollView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-    view.insertSubview(scrollView, at: 0)
+    return scrollView
   }
 
   // MARK: Scroll View Lifecycle
@@ -57,14 +49,25 @@ open class TaskScrollViewController<Response, Content>: TaskViewController<Respo
   }
 
   open var scrollViewIfLoaded: UIScrollView? {
-    _scrollView
+    return _scrollView
   }
 
   open func scrollViewDidLoad() {
-
   }
 
   open var isScrollViewLoaded: Bool {
-    _scrollView != nil
+    return _scrollView != nil
+  }
+
+  // MARK: View Lifecycle
+
+  open override func viewDidLoad() {
+    super.viewDidLoad()
+
+    if scrollView.superview == nil {
+      scrollView.frame = view.bounds
+      scrollView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+      view.insertSubview(scrollView, at: 0)
+    }
   }
 }

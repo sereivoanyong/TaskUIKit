@@ -1,7 +1,7 @@
 //
-//  TaskCollectionListViewController.swift
+//  TaskTableListViewController.swift
 //
-//  Created by Sereivoan Yong on 1/14/22.
+//  Created by Sereivoan Yong on 8/28/23.
 //
 
 import UIKit
@@ -9,7 +9,7 @@ import UIKit
 /// Subclass must implement these functions:
 /// `startTasks(page:completion:)`
 /// `contents`
-open class TaskCollectionListViewController<Collection: RangeReplaceableCollection>: TaskCollectionViewController<Collection> where Collection.Index == Int {
+open class TaskTableListViewController<Collection: RangeReplaceableCollection>: TaskTableViewController<Collection> where Collection.Index == Int {
 
   open var objects: Collection = .init()
 
@@ -34,13 +34,13 @@ open class TaskCollectionListViewController<Collection: RangeReplaceableCollecti
     return objects[indexPath.item]
   }
 
-  @objc(collectionView:numberOfItemsInSection:)
-  open func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+  @objc(tableView:numberOfRowsInSection:)
+  open func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
     return numberOfObjects
   }
 
-  @objc(collectionView:cellForItemAtIndexPath:)
-  open func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+  @objc(tableView:cellForRowAtIndexPath:)
+  open func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
     fatalError()
   }
 }
