@@ -51,6 +51,8 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     return nil
   }
 
+  open private(set) var viewController: UIViewController?
+
   open private(set) var emptyViewIfLoaded: EmptyView?
   lazy open private(set) var emptyView: EmptyView = {
     let emptyView = EmptyView()
@@ -232,7 +234,28 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   }
 
   open func reloadData(_ contents: Contents?, page: Int) {
-    fatalError("\(#function) has not been implemented")
+    if let contents {
+      let currentViewController = viewController
+      if let newViewController = viewController(for: contents, reusingViewController: currentViewController) {
+        viewController = newViewController
+        if newViewController != currentViewController {
+          currentViewController?.removeFromParentIncludingView()
+          addChildIncludingView(newViewController) { view, childView in
+            childView.frame = view.bounds
+            childView.autoresizingMask = .flexibleSize
+            view.insertSubview(childView, at: 0)
+          }
+        }
+      } else {
+        viewController = nil
+      }
+    } else {
+      viewController?.removeFromParentIncludingView()
+    }
+  }
+
+  open func viewController(for contents: Contents, reusingViewController: UIViewController?) -> UIViewController? {
+    return nil
   }
 
   // MARK: Empty View
