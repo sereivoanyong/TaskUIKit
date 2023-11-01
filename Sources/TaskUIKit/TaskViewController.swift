@@ -217,10 +217,13 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   }
 
   private func configureRefreshControl(for scrollView: UIScrollView) {
+#if targetEnvironment(macCatalyst)
+#else
     guard scrollView.refreshControl == nil else { return }
     let refreshControl = UIRefreshControl()
     refreshControl.addTarget(self, action: #selector(didPullToRefresh(_:)), for: .valueChanged)
     scrollView.refreshControl = refreshControl
+#endif
   }
 
   @objc private func didPullToRefresh(_ sender: UIRefreshControl) {
