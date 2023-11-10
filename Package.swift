@@ -1,4 +1,4 @@
-// swift-tools-version:5.8
+// swift-tools-version:5.9
 
 import PackageDescription
 
@@ -16,6 +16,9 @@ let package = Package(
     .package(url: "https://github.com/sereivoanyong/SwiftKit", branch: "main"),
   ],
   targets: [
-    .target(name: "TaskUIKit", dependencies: ["MJRefresh", .product(name: "UIKitExtra", package: "SwiftKit")]),
+    .target(name: "TaskUIKit", dependencies: [
+      "MJRefresh",
+      .product(name: "UIKitUtilities", package: "SwiftKit")
+    ]),
   ]
 )
