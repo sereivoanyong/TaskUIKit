@@ -177,10 +177,9 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
         if let paging, paging.hasNextPage() {
           if let footer = refreshingScrollView.mj_footer {
             footer.endRefreshing()
-            footer.isHidden = true
           } else {
             let footer = MJRefreshAutoNormalFooter { [unowned self] in
-              startTasks(page: paging.page + 1)
+              startTasks(page: currentPaging.map { $0.page + 1 } ?? 1)
             }
             footer.stateLabel?.isHidden = true
             footer.isRefreshingTitleHidden = true
@@ -189,7 +188,6 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
         } else {
           if let footer = refreshingScrollView.mj_footer {
             footer.endRefreshingWithNoMoreData()
-            footer.isHidden = true
           }
         }
       }
