@@ -19,10 +19,21 @@ open class TaskCollectionListViewController<Collection: RangeReplaceableCollecti
 
   open override func store(_ newObjects: Collection?, page: Int) {
     let newObjects = newObjects ?? .init()
-    if page == 1 {
-      objects = newObjects
-    } else {
+    if page > 1 {
       objects.append(contentsOf: newObjects)
+    } else {
+      objects = newObjects
+    }
+  }
+
+  open override func reloadData(_ newObjects: Collection?, page: Int) {
+    if page > 1 {
+      if let newObjects {
+        let oldCount = objects.count - newObjects.count
+        collectionView.insertItems(at: (oldCount..<objects.count).map { IndexPath(item: $0, section: 0) })
+      }
+    } else {
+      collectionView.reloadData()
     }
   }
 
