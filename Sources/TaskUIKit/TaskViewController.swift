@@ -171,6 +171,11 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     switch result {
     case .success(let (content, paging)):
       currentPaging = paging
+      currentError = nil
+      store(content, page: page)
+      emptyView.reload()
+      reloadData(content, page: page)
+
       if let refreshingScrollView {
         configureRefreshControl(for: refreshingScrollView)
 
@@ -192,18 +197,13 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
         }
       }
 
-      currentError = nil
-      store(content, page: page)
-      emptyView.reload()
-      reloadData(content, page: page)
-
     case .failure(let error):
-      refreshingScrollView?.mj_footer?.endRefreshing()
-
       currentError = error
       store(nil, page: page)
       emptyView.reload()
       reloadData(nil, page: page)
+
+      refreshingScrollView?.mj_footer?.endRefreshing()
     }
   }
 
