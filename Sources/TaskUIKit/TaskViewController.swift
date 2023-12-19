@@ -93,6 +93,9 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     return indicatorView
   }()
 
+  open private(set) var headerRefreshControlIfLoaded: RefreshControl?
+  open private(set) var footerRefreshControlIfLoaded: RefreshControl?
+
   // MARK: Init / Deinit
 
   deinit {
@@ -113,7 +116,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
         }
       } else {
         if let refreshingScrollView {
-          configureRefreshControl(for: refreshingScrollView)
+          configureHeaderRefreshControl(for: refreshingScrollView)
         }
       }
     }
@@ -165,8 +168,11 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
   open func tasksDidComplete(result: Result<(Contents, PagingProtocol?), Error>, page: Int) {
     loadingIndicatorView.stopAnimating()
-    let refreshingScrollView = refreshingScrollView
-    refreshingScrollView?.refreshControl?.endRefreshing()
+    if let loadingIndicatorViewIfLoaded {
+      loadingIndicatorViewIfLoaded.stopAnimating()
+    }
+
+    headerRefreshControlIfLoaded?.endRefreshing()
 
     switch result {
     case .success(let (content, paging)):
@@ -177,22 +183,21 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
       reloadData(content, page: page)
 
       if let refreshingScrollView {
-        configureRefreshControl(for: refreshingScrollView)
+        configureHeaderRefreshControl(for: refreshingScrollView)
 
         if let paging, paging.hasNextPage() {
-          if let footer = refreshingScrollView.mj_footer {
-            footer.endRefreshing()
+          if let footerRefreshControlIfLoaded {
+            footerRefreshControlIfLoaded.endRefreshing()
           } else {
-            let footer = MJRefreshAutoNormalFooter { [unowned self] in
-              startTasks(page: currentPaging.map { $0.page + 1 } ?? 1)
-            }
-            footer.stateLabel?.isHidden = true
-            footer.isRefreshingTitleHidden = true
-            refreshingScrollView.mj_footer = footer
+            configureFooterRefreshControl(for: refreshingScrollView)
           }
         } else {
-          if let footer = refreshingScrollView.mj_footer {
-            footer.endRefreshingWithNoMoreData()
+          if let footerRefreshControlIfLoaded {
+            if let footerRefreshControlIfLoaded = footerRefreshControlIfLoaded as? FiniteRefreshControl {
+              footerRefreshControlIfLoaded.endRefreshingWithNoMoreData()
+            } else {
+              footerRefreshControlIfLoaded.endRefreshing()
+            }
           }
         }
       }
@@ -203,7 +208,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
       emptyView.reload()
       reloadData(nil, page: page)
 
-      refreshingScrollView?.mj_footer?.endRefreshing()
+      footerRefreshControlIfLoaded?.endRefreshing()
     }
   }
 
@@ -213,18 +218,55 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     }
   }
 
-  private func configureRefreshControl(for scrollView: UIScrollView) {
+  private func configureHeaderRefreshControl(for scrollView: UIScrollView) {
 #if targetEnvironment(macCatalyst)
 #else
-    guard scrollView.refreshControl == nil else { return }
+    guard headerRefreshControlIfLoaded == nil else { return }
+
+    if let refreshControlProvider = TaskUIKitConfiguration.headerRefreshControlProvider {
+      let refreshConrol = refreshControlProvider(scrollView, { [unowned self] in
+        didPullToRefresh()
+      })
+      headerRefreshControlIfLoaded = refreshConrol
+      return
+    }
+
     let refreshControl = UIRefreshControl()
-    refreshControl.addTarget(self, action: #selector(didPullToRefresh(_:)), for: .valueChanged)
+    refreshControl.addTarget(self, action: #selector(didPullToRefresh), for: .valueChanged)
     scrollView.refreshControl = refreshControl
+    headerRefreshControlIfLoaded = refreshControl
 #endif
   }
 
-  @objc private func didPullToRefresh(_ sender: UIRefreshControl) {
+  private func configureFooterRefreshControl(for scrollView: UIScrollView) {
+#if targetEnvironment(macCatalyst)
+#else
+    guard footerRefreshControlIfLoaded == nil else { return }
+
+    if let refreshControlProvider = TaskUIKitConfiguration.footerRefreshControlProvider {
+      let refreshConrol = refreshControlProvider(scrollView, { [unowned self] in
+        didPullToLoadMore()
+      })
+      footerRefreshControlIfLoaded = refreshConrol
+      return
+    }
+
+    let footer = MJRefreshAutoNormalFooter { [unowned self] in
+      startTasks(page: currentPaging.map { $0.page + 1 } ?? 1)
+    }
+    footer.stateLabel?.isHidden = true
+    footer.isRefreshingTitleHidden = true
+    scrollView.mj_footer = footer
+    footerRefreshControlIfLoaded = footer
+#endif
+  }
+
+  @objc private func didPullToRefresh() {
     reloadTasks(reset: false, animated: false)
+  }
+
+  @objc private func didPullToLoadMore() {
+    startTasks(page: currentPaging.map { $0.page + 1 } ?? 1)
   }
 
   // MARK: Data
