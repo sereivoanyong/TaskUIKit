@@ -36,6 +36,10 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   open private(set) var currentPaging: PagingProtocol?
   open private(set) var currentError: Error?
 
+  open var initialError: Error? {
+    return nil
+  }
+
   open var contents: Contents? {
     fatalError()
   }
@@ -110,9 +114,13 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     if isFirstViewAppear {
       isFirstViewAppear = false
       if isContentsNilOrEmpty {
-        if loadsTaskOnViewAppear {
-          // We do not need to reset as this is an initial load.
-          reloadTasks(reset: false, animated: true)
+        if initialError == nil {
+          if loadsTaskOnViewAppear {
+            // We do not need to reset as this is an initial load.
+            reloadTasks(reset: false, animated: true)
+          }
+        } else {
+          emptyView.reload()
         }
       } else {
         if let refreshingScrollView {
@@ -324,6 +332,9 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     }
     if let currentError {
       return .error(currentError)
+    }
+    if let initialError {
+      return .error(initialError)
     }
     return .empty
   }
