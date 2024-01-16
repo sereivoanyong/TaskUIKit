@@ -232,10 +232,10 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     guard headerRefreshControlIfLoaded == nil else { return }
 
     if let refreshControlProvider = TaskUIKitConfiguration.headerRefreshControlProvider {
-      let refreshConrol = refreshControlProvider(scrollView, { [unowned self] in
+      let refreshControl = refreshControlProvider(scrollView, { [unowned self] in
         didPullToRefresh()
       })
-      headerRefreshControlIfLoaded = refreshConrol
+      headerRefreshControlIfLoaded = refreshControl
       return
     }
 
