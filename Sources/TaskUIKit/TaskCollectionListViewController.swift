@@ -30,11 +30,16 @@ open class TaskCollectionListViewController<Collection: RangeReplaceableCollecti
     if page > 1 {
       if let newObjects {
         let oldCount = objects.count - newObjects.count
-        collectionView.insertItems(at: (oldCount..<objects.count).map { IndexPath(item: $0, section: 0) })
+        let section = sectionForObjects
+        collectionView.insertItems(at: (oldCount..<objects.count).map { IndexPath(item: $0, section: section) })
       }
     } else {
       collectionView.reloadData()
     }
+  }
+
+  open var sectionForObjects: Int {
+    return 0
   }
 
   open var numberOfObjects: Int {
