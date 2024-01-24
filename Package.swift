@@ -13,11 +13,13 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/CoderMJLee/MJRefresh", .upToNextMajor(from: "3.7.6")),
-    .package(url: "https://github.com/sereivoanyong/SwiftKit", branch: "main"),
+    .package(url: "https://github.com/sereivoanyong/EmptyUIKit", branch: "main"),
+    .package(url: "https://github.com/sereivoanyong/SwiftKit", branch: "main")
   ],
   targets: [
     .target(name: "TaskUIKit", dependencies: [
       "MJRefresh",
+      "EmptyUIKit",
       .product(name: "UIKitUtilities", package: "SwiftKit")
     ]),
   ]
