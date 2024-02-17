@@ -47,8 +47,10 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
   open private(set) var isLoading: Bool = false
 
-  /// Setting this property after `viewIsAppearing(_:)` has no effect
+  /// If `contents` isn't nil nor empty, this property is ignored. Setting this property after `viewIsAppearing(_:)` has no effect.
   open var loadsTaskOnViewAppear: Bool = true
+
+  open var ignoresContentsOnLoad: Bool = false
 
   /// Returns the scroll view for pull-to-refresh
   open var refreshingScrollView: UIScrollView? {
@@ -124,6 +126,9 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
           emptyView.reload()
         }
       } else {
+        if loadsTaskOnViewAppear && ignoresContentsOnLoad {
+          reloadTasks(reset: false, animated: false)
+        }
         if let refreshingScrollView {
           configureHeaderRefreshControl(for: refreshingScrollView)
         }
