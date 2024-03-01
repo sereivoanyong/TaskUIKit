@@ -317,6 +317,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   // MARK: Empty View
 
   open func configureEmptyView(_ emptyView: EmptyView, for error: Error) {
+    emptyView.image = TaskUIKitConfiguration.emptyViewImageForError
     emptyView.title = NSLocalizedString("Unable to Load", bundle: Bundle.module, comment: "")
     emptyView.message = error.localizedDescription
     emptyView.button.setTitle(NSLocalizedString("Reload", bundle: Bundle.module, comment: ""), for: .normal)
@@ -324,6 +325,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   }
 
   open func configureEmptyViewForEmpty(_ emptyView: EmptyView) {
+    emptyView.image = TaskUIKitConfiguration.emptyViewImageForEmpty
     emptyView.title = NSLocalizedString("No Content", bundle: Bundle.module, comment: "")
   }
 

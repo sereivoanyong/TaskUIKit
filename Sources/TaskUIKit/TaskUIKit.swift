@@ -14,6 +14,9 @@ public enum TaskUIKitConfiguration {
 
   public static var headerRefreshControlProvider: ((UIScrollView, @escaping() -> Void) -> RefreshControl)?
   public static var footerRefreshControlProvider: ((UIScrollView, @escaping() -> Void) -> RefreshControl)?
+
+  public static var emptyViewImageForEmpty: UIImage?
+  public static var emptyViewImageForError: UIImage?
 }
 
 public protocol RefreshControl: UIView {
