@@ -238,7 +238,8 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     guard headerRefreshControlIfLoaded == nil else { return }
 
     if let refreshControlProvider = TaskUIKitConfiguration.headerRefreshControlProvider {
-      let refreshControl = refreshControlProvider(scrollView, { [unowned self] in
+      let refreshControl = refreshControlProvider(scrollView, { [weak self] in
+        guard let self else { return }
         didPullToRefresh()
       })
       headerRefreshControlIfLoaded = refreshControl
@@ -258,7 +259,8 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     guard footerRefreshControlIfLoaded == nil else { return }
 
     if let refreshControlProvider = TaskUIKitConfiguration.footerRefreshControlProvider {
-      let refreshConrol = refreshControlProvider(scrollView, { [unowned self] in
+      let refreshConrol = refreshControlProvider(scrollView, { [weak self] in
+        guard let self else { return }
         didPullToLoadMore()
       })
       footerRefreshControlIfLoaded = refreshConrol
