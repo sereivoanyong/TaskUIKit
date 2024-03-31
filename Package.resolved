@@ -1,4 +1,5 @@
 {
+  "originHash" : "19588e8ea410e3e83b496aaa8ca23f83b2511af43d3f8921f02121d17fa1b16d",
   "pins" : [
     {
       "identity" : "emptyuikit",
@@ -14,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/CoderMJLee/MJRefresh",
       "state" : {
-        "revision" : "b9c5464d5480001b7e3b0cdf4c34f4a683d3acd5",
-        "version" : "3.7.6"
+        "revision" : "535d39c86e592d73f8b8e75f9bf1eda62ca4a4ce",
+        "version" : "3.7.9"
       }
     },
     {
@@ -23,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/realm/realm-core.git",
       "state" : {
-        "revision" : "a5e87a39cffdcc591f3203c11cfca68100d0b9a6",
-        "version" : "13.26.0"
+        "revision" : "374dd672af357732dccc135fecc905406fec3223",
+        "version" : "14.4.1"
       }
     },
     {
@@ -32,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/realm/realm-swift",
       "state" : {
-        "revision" : "eafdd3720a8cc750bdd38bf776082d2c8cf743fc",
-        "version" : "10.46.0"
+        "revision" : "e0c2fbb442979fbf1e4be80e01d142f310a9c762",
+        "version" : "10.49.1"
       }
     },
     {
@@ -42,9 +43,9 @@
       "location" : "https://github.com/sereivoanyong/SwiftKit",
       "state" : {
         "branch" : "main",
-        "revision" : "8b1de0adefcf80dd828ecbda266e721cb17b052a"
+        "revision" : "39c63e529b4f4d94be7bf16b3d4914e98dac0a1e"
       }
     }
   ],
-  "version" : 2
+  "version" : 3
 }
