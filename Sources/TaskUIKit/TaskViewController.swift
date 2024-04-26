@@ -57,6 +57,8 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     return nil
   }
 
+  open var automaticallyConfiguresFooterRefreshControl: Bool = true
+
   open private(set) var viewController: UIViewController?
 
   open private(set) var emptyViewIfLoaded: EmptyView?
@@ -203,7 +205,9 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
           if let footerRefreshControlIfLoaded {
             footerRefreshControlIfLoaded.endRefreshing()
           } else {
-            configureFooterRefreshControl(for: refreshingScrollView)
+            if automaticallyConfiguresFooterRefreshControl {
+              configureFooterRefreshControl(for: refreshingScrollView)
+            }
           }
         } else {
           if let footerRefreshControlIfLoaded {
