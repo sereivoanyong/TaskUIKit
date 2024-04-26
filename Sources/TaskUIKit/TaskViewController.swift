@@ -16,7 +16,7 @@ import MJRefresh
 /// `reloadData(_:page:)`
 open class TaskViewController<Contents>: UIViewController, EmptyViewStateProviding, EmptyViewDataSource {
 
-  private var isFirstViewAppear: Bool = true
+  open private(set) var isFirstViewAppear: Bool = true
 
   private var isContentsNilOrEmpty: Bool {
     if let contents {
