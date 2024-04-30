@@ -213,6 +213,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
           if let footerRefreshControlIfLoaded {
             if let footerRefreshControlIfLoaded = footerRefreshControlIfLoaded as? FiniteRefreshControl {
               footerRefreshControlIfLoaded.endRefreshingWithNoMoreData()
+              footerRefreshControlIfLoaded.isHidden = true
             } else {
               footerRefreshControlIfLoaded.endRefreshing()
             }
