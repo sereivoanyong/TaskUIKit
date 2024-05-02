@@ -57,6 +57,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     return nil
   }
 
+  open var automaticallyConfiguresHeaderRefreshControl: Bool = true
   open var automaticallyConfiguresFooterRefreshControl: Bool = true
 
   open private(set) var viewController: UIViewController?
@@ -132,7 +133,9 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
           reloadTasks(reset: false, animated: false)
         }
         if let refreshingScrollView {
-          configureHeaderRefreshControl(for: refreshingScrollView)
+          if automaticallyConfiguresHeaderRefreshControl {
+            configureHeaderRefreshControl(for: refreshingScrollView)
+          }
         }
       }
     }
@@ -199,7 +202,9 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
       reloadData(content, page: page)
 
       if let refreshingScrollView {
-        configureHeaderRefreshControl(for: refreshingScrollView)
+        if automaticallyConfiguresHeaderRefreshControl {
+          configureHeaderRefreshControl(for: refreshingScrollView)
+        }
 
         if let paging, paging.hasNextPage() {
           if let footerRefreshControlIfLoaded {
