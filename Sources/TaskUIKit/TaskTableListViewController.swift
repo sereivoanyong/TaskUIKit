@@ -17,7 +17,8 @@ open class TaskTableListViewController<Collection: RangeReplaceableCollection>: 
     return objects
   }
 
-  open override func store(_ newObjects: Collection?, page: Int) {
+  open override func store(_ newObjects: Collection?, page: Int?) {
+    guard let page else { return }
     let newObjects = newObjects ?? .init()
     if page == 1 {
       objects = newObjects

@@ -97,7 +97,7 @@ open class TaskTableViewController<Contents>: TaskViewController<Contents> {
 
   // MARK: Data
 
-  open override func reloadData(_ contents: Contents?, page: Int) {
+  open override func reloadData(_ contents: Contents?, page: Int?) {
     tableView.reloadData()
   }
 }

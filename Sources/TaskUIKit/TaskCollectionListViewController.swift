@@ -17,7 +17,8 @@ open class TaskCollectionListViewController<Collection: RangeReplaceableCollecti
     return objects
   }
 
-  open override func store(_ newObjects: Collection?, page: Int) {
+  open override func store(_ newObjects: Collection?, page: Int?) {
+    guard let page else { return }
     let newObjects = newObjects ?? .init()
     if page > 1 {
       objects.append(contentsOf: newObjects)
@@ -26,8 +27,8 @@ open class TaskCollectionListViewController<Collection: RangeReplaceableCollecti
     }
   }
 
-  open override func reloadData(_ newObjects: Collection?, page: Int) {
-    if page > 1 {
+  open override func reloadData(_ newObjects: Collection?, page: Int?) {
+    if let page, page > 1 {
       if let newObjects {
         let oldCount = objects.count - newObjects.count
         let section = sectionForObjects

@@ -18,7 +18,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
   open private(set) var isFirstViewAppear: Bool = true
 
-  private var isContentsNilOrEmpty: Bool {
+  private func isNilOrEmpty(_ contents: Contents?) -> Bool {
     if let contents {
       if let contents = contents as? any Collection, contents.isEmpty {
         return true
@@ -37,20 +37,23 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   open private(set) var currentPaging: PagingProtocol?
   open private(set) var currentError: Error?
 
-  open var initialError: Error? {
+  open var contents: Contents? {
+    fatalError()
+  }
+
+  // This is used when first page failed
+  open var cachedContents: Contents? {
     return nil
   }
 
-  open var contents: Contents? {
-    fatalError()
+  open var initialError: Error? {
+    return nil
   }
 
   open private(set) var isLoading: Bool = false
 
   /// If `contents` isn't nil nor empty, this property is ignored. Setting this property after `viewIsAppearing(_:)` has no effect.
   open var loadsTaskOnViewAppear: Bool = true
-
-  open var ignoresContentsOnLoad: Bool = false
 
   /// Returns the scroll view for pull-to-refresh
   open var refreshingScrollView: UIScrollView? {
@@ -85,17 +88,11 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
   open private(set) var loadingIndicatorViewIfLoaded: UIActivityIndicatorView?
   lazy open private(set) var loadingIndicatorView: UIActivityIndicatorView = {
-    let style: UIActivityIndicatorView.Style
-    if #available(iOS 13.0, *) {
-      style = .medium
-    } else {
-      style = .gray
-    }
-    let indicatorView = UIActivityIndicatorView(style: style)
-    indicatorView.translatesAutoresizingMaskIntoConstraints = false
+    let indicatorView = UIActivityIndicatorView(style: .medium)
     loadingIndicatorViewIfLoaded = indicatorView
     view.addSubview(indicatorView)
 
+    indicatorView.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
       indicatorView.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
       indicatorView.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor),
@@ -119,31 +116,20 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
     if isFirstViewAppear {
       isFirstViewAppear = false
-      if isContentsNilOrEmpty {
-        if initialError == nil {
-          if loadsTaskOnViewAppear {
-            // We do not need to reset as this is an initial load.
-            reloadTasks(reset: false, animated: true)
-          }
-        } else {
-          emptyView.reload()
+      if initialError == nil {
+        if loadsTaskOnViewAppear {
+          // We do not need to reset as this is an initial load.
+          reloadTasks(reset: false, animated: true)
         }
       } else {
-        if loadsTaskOnViewAppear && ignoresContentsOnLoad {
-          reloadTasks(reset: false, animated: false)
-        }
-        if let refreshingScrollView {
-          if automaticallyConfiguresHeaderRefreshControl {
-            configureHeaderRefreshControl(for: refreshingScrollView)
-          }
-        }
+        emptyView.reload()
       }
     }
   }
 
   // MARK: Networking
 
-  @objc open func resetAndReloadTasksWithAnimation() {
+  @objc private func reloadTasks(_ sender: UIButton) {
     reloadTasks(reset: true, animated: true)
   }
 
@@ -165,7 +151,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     startTasks()
   }
 
-  final public func startTasks(page: Int = 1) {
+  private func startTasks(page: Int = 1) {
     assert(isViewLoaded, "`\(#function)` can only be called after view is loaded.")
     cancelAllTasks()
     isLoading = true
@@ -227,10 +213,21 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
       }
 
     case .failure(let error):
-      currentError = error
-      store(nil, page: page)
-      emptyView.reload()
-      reloadData(nil, page: page)
+      var isHandled: Bool = false
+      if page == 1 && currentPaging == nil {
+        let cachedContents = cachedContents
+        if !isNilOrEmpty(cachedContents) {
+          currentError = error
+          store(cachedContents, page: nil)
+          emptyView.reload()
+          reloadData(cachedContents, page: nil)
+          isHandled = true
+        }
+      }
+      if !isHandled {
+        currentError = error
+        emptyView.reload()
+      }
 
       footerRefreshControlIfLoaded?.endRefreshing()
     }
@@ -297,11 +294,11 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
   // MARK: Data
 
-  open func store(_ contents: Contents?, page: Int) {
+  open func store(_ contents: Contents?, page: Int?) {
     fatalError("\(#function) has not been implemented")
   }
 
-  open func reloadData(_ contents: Contents?, page: Int) {
+  open func reloadData(_ contents: Contents?, page: Int?) {
     if let contents {
       let currentViewController = viewController
       if let newViewController = viewController(for: contents, reusingViewController: currentViewController) {
@@ -333,7 +330,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     emptyView.title = NSLocalizedString("Unable to Load", bundle: Bundle.module, comment: "")
     emptyView.message = error.localizedDescription
     emptyView.button.setTitle(NSLocalizedString("Reload", bundle: Bundle.module, comment: ""), for: .normal)
-    emptyView.button.addTarget(self, action: #selector(resetAndReloadTasksWithAnimation), for: .touchUpInside)
+    emptyView.button.addTarget(self, action: #selector(reloadTasks(_:)), for: .touchUpInside)
   }
 
   open func configureEmptyViewForEmpty(_ emptyView: EmptyView) {
@@ -347,7 +344,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     if isLoading {
       return nil
     }
-    if !isContentsNilOrEmpty {
+    if !isNilOrEmpty(contents) {
       return nil
     }
     if let currentError {
