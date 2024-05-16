@@ -8,7 +8,6 @@ import UIKit
 
 /// Subclass must implement these functions:
 /// `startTasks(page:completion:)`
-/// `contents`
 open class TaskCollectionListViewController<Collection: RangeReplaceableCollection>: TaskCollectionViewController<Collection> where Collection.Index == Int {
 
   open var objects: Collection = .init()
@@ -17,25 +16,17 @@ open class TaskCollectionListViewController<Collection: RangeReplaceableCollecti
     return objects
   }
 
-  open override func store(_ newObjects: Collection?, page: Int?) {
-    guard let page else { return }
+  open override func applyData(_ newObjects: Collection?, page: Int?) {
     let newObjects = newObjects ?? .init()
-    if page > 1 {
-      objects.append(contentsOf: newObjects)
-    } else {
+    if page == nil || page == 1 {
       objects = newObjects
-    }
-  }
-
-  open override func reloadData(_ newObjects: Collection?, page: Int?) {
-    if let page, page > 1 {
-      if let newObjects {
-        let oldCount = objects.count - newObjects.count
-        let section = sectionForObjects
-        collectionView.insertItems(at: (oldCount..<objects.count).map { IndexPath(item: $0, section: section) })
-      }
-    } else {
       collectionView.reloadData()
+    } else {
+      let oldCount = objects.count
+      objects.append(contentsOf: newObjects)
+      let currentCount = objects.count
+      let section = sectionForObjects
+      collectionView.insertItems(at: (oldCount..<currentCount).map { IndexPath(item: $0, section: section) })
     }
   }
 

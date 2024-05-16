@@ -8,8 +8,7 @@ import UIKit
 
 /// Subclass must implement these functions:
 /// `startTasks(page:completion:)`
-/// `contents`
-/// `store(_:page:)`
+/// `applyData(_:page:)`
 open class TaskCollectionViewController<Contents>: TaskViewController<Contents> {
 
   private var _collectionView: UICollectionView!
@@ -90,11 +89,5 @@ open class TaskCollectionViewController<Contents>: TaskViewController<Contents> 
       collectionView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
       view.insertSubview(collectionView, at: 0)
     }
-  }
-
-  // MARK: Data
-
-  open override func reloadData(_ contents: Contents?, page: Int?) {
-    collectionView.reloadData()
   }
 }

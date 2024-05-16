@@ -8,7 +8,6 @@ import UIKit
 
 /// Subclass must implement these functions:
 /// `startTasks(page:completion:)`
-/// `contents`
 open class TaskTableListViewController<Collection: RangeReplaceableCollection>: TaskTableViewController<Collection> where Collection.Index == Int {
 
   open var objects: Collection = .init()
@@ -17,14 +16,22 @@ open class TaskTableListViewController<Collection: RangeReplaceableCollection>: 
     return objects
   }
 
-  open override func store(_ newObjects: Collection?, page: Int?) {
-    guard let page else { return }
+  open override func applyData(_ newObjects: Collection?, page: Int?) {
     let newObjects = newObjects ?? .init()
-    if page == 1 {
+    if page == nil || page == 1 {
       objects = newObjects
+      tableView.reloadData()
     } else {
+      let oldCount = objects.count
       objects.append(contentsOf: newObjects)
+      let currentCount = objects.count
+      let section = sectionForObjects
+      tableView.insertRows(at: (oldCount..<currentCount).map { IndexPath(item: $0, section: section) }, with: .automatic)
     }
+  }
+
+  open var sectionForObjects: Int {
+    return 0
   }
 
   open var numberOfObjects: Int {

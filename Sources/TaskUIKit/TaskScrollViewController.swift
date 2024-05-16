@@ -8,9 +8,7 @@ import UIKit
 
 /// Subclass must implement these functions:
 /// `startTasks(page:completion:)`
-/// `contents`
-/// `store(_:page:)`
-/// `reloadData(_:page:)`
+/// `applyData(_:page:)`
 open class TaskScrollViewController<Contents>: TaskViewController<Contents> {
 
   private var _scrollView: UIScrollView!

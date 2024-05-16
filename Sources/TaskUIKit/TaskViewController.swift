@@ -11,9 +11,7 @@ import MJRefresh
 
 /// Subclass must implement these functions:
 /// `startTasks(page:completion:)`
-/// `contents`
-/// `store(_:page:)`
-/// `reloadData(_:page:)`
+/// `applyData(_:page:)`
 open class TaskViewController<Contents>: UIViewController, EmptyViewStateProviding, EmptyViewDataSource {
 
   open private(set) var isFirstViewAppear: Bool = true
@@ -142,8 +140,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     if reset {
       currentPaging = nil
       currentError = nil
-      store(nil, page: 1)
-      reloadData(nil, page: 1)
+      applyData(nil, page: 1)
     }
     if animated {
       loadingIndicatorView.startAnimating()
@@ -183,9 +180,8 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     case .success(let (content, paging)):
       currentPaging = paging
       currentError = nil
-      store(content, page: page)
+      applyData(content, page: page)
       emptyView.reload()
-      reloadData(content, page: page)
 
       if let refreshingScrollView {
         if automaticallyConfiguresHeaderRefreshControl {
@@ -218,9 +214,8 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
         let cachedContents = cachedContents
         if !isNilOrEmpty(cachedContents) {
           currentError = error
-          store(cachedContents, page: nil)
+          applyData(cachedContents, page: nil)
           emptyView.reload()
-          reloadData(cachedContents, page: nil)
           isHandled = true
         }
       }
@@ -266,11 +261,11 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     guard footerRefreshControlIfLoaded == nil else { return }
 
     if let refreshControlProvider = TaskUIKitConfiguration.footerRefreshControlProvider {
-      let refreshConrol = refreshControlProvider(scrollView, { [weak self] in
+      let refreshControl = refreshControlProvider(scrollView, { [weak self] in
         guard let self else { return }
         didPullToLoadMore()
       })
-      footerRefreshControlIfLoaded = refreshConrol
+      footerRefreshControlIfLoaded = refreshControl
       return
     }
 
@@ -294,12 +289,9 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
   // MARK: Data
 
-  open func store(_ contents: Contents?, page: Int?) {
-    fatalError("\(#function) has not been implemented")
-  }
-
-  open func reloadData(_ contents: Contents?, page: Int?) {
-    if let contents {
+  /// When `contents` is loaded from cache via `cachedContents`, `page` is `nil`.
+  open func applyData(_ contents: Contents?, page: Int?) {
+    if let contents, !isNilOrEmpty(contents) {
       let currentViewController = viewController
       if let newViewController = viewController(for: contents, reusingViewController: currentViewController) {
         viewController = newViewController
@@ -312,10 +304,12 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
           }
         }
       } else {
+        viewController?.removeFromParentIncludingView()
         viewController = nil
       }
     } else {
       viewController?.removeFromParentIncludingView()
+      viewController = nil
     }
   }
 

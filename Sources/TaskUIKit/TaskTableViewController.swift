@@ -8,8 +8,7 @@ import UIKit
 
 /// Subclass must implement these functions:
 /// `startTasks(page:completion:)`
-/// `contents`
-/// `store(_:page:)`
+/// `applyData(_:page:)`
 open class TaskTableViewController<Contents>: TaskViewController<Contents> {
 
   /// Default is `UITableView.self`. Custom class must implement `init(frame:style:)`.
@@ -93,11 +92,5 @@ open class TaskTableViewController<Contents>: TaskViewController<Contents> {
       tableView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
       view.insertSubview(tableView, at: 0)
     }
-  }
-
-  // MARK: Data
-
-  open override func reloadData(_ contents: Contents?, page: Int?) {
-    tableView.reloadData()
   }
 }
