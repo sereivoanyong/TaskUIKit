@@ -7,7 +7,7 @@
 import UIKit
 
 /// Subclass must implement these functions:
-/// `startTasks(page:completion:)`
+/// `startTasks(page:cancellables:completion:)`
 open class TaskCollectionListViewController<Collection: RangeReplaceableCollection>: TaskCollectionViewController<Collection> where Collection.Index == Int {
 
   open var objects: Collection = .init()

@@ -7,7 +7,7 @@
 import UIKit
 
 /// Subclass must implement these functions:
-/// `startTasks(page:completion:)`
+/// `startTasks(page:cancellables:completion:)`
 /// `applyData(_:page:)`
 open class TaskTableViewController<Contents>: TaskViewController<Contents> {
 

@@ -10,7 +10,7 @@ import Combine
 import MJRefresh
 
 /// Subclass must implement these functions:
-/// `startTasks(page:completion:)`
+/// `startTasks(page:cancellables:completion:)`
 /// `applyData(_:page:)`
 open class TaskViewController<Contents>: UIViewController, EmptyViewStateProviding, EmptyViewDataSource {
 
@@ -26,7 +26,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     return true
   }
 
-  open private(set) var cancellables: Set<AnyCancellable> = [] {
+  open private(set) var cancellables: [AnyCancellable] = [] {
     willSet {
       cancelAllTasks()
     }
@@ -153,16 +153,17 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     cancelAllTasks()
     isLoading = true
     emptyView.reload()
-    cancellables = startTasks(page: page) { [weak self] result in
+    var newCancellables: [AnyCancellable] = []
+    startTasks(page: page, cancellables: &newCancellables) { [weak self] result in
       guard let self else { return }
       isLoading = false
       tasksDidComplete(result: result, page: page)
     }
+    cancellables = newCancellables
   }
 
   /// `completionHandler` must be called on main queue.
-  @discardableResult
-  open func startTasks(page: Int, completion: @escaping (Result<(Contents, PagingProtocol?), Error>) -> Void) -> Set<AnyCancellable> {
+  open func startTasks(page: Int, cancellables: inout [AnyCancellable], completion: @escaping (Result<(Contents, PagingProtocol?), Error>) -> Void) {
     fatalError("Subclass must override")
   }
 
