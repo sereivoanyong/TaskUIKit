@@ -118,6 +118,8 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
         if loadsTaskOnViewAppear {
           // We do not need to reset as this is an initial load.
           reloadTasks(reset: false, animated: true)
+        } else {
+          emptyView.reload()
         }
       } else {
         emptyView.reload()
@@ -170,11 +172,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   // MARK: Task Lifecycle
 
   open func tasksDidComplete(result: Result<(Contents, PagingProtocol?), Error>, page: Int) {
-    loadingIndicatorView.stopAnimating()
-    if let loadingIndicatorViewIfLoaded {
-      loadingIndicatorViewIfLoaded.stopAnimating()
-    }
-
+    loadingIndicatorViewIfLoaded?.stopAnimating()
     headerRefreshControlIfLoaded?.endRefreshing()
 
     switch result {
@@ -322,15 +320,15 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
   open func configureEmptyView(_ emptyView: EmptyView, for error: Error) {
     emptyView.image = TaskUIKitConfiguration.emptyViewImageForError
-    emptyView.title = NSLocalizedString("Unable to Load", bundle: Bundle.module, comment: "")
-    emptyView.message = error.localizedDescription
+    emptyView.text = NSLocalizedString("Unable to Load", bundle: Bundle.module, comment: "")
+    emptyView.secondaryText = error.localizedDescription
     emptyView.button.setTitle(NSLocalizedString("Reload", bundle: Bundle.module, comment: ""), for: .normal)
     emptyView.button.addTarget(self, action: #selector(reloadTasks(_:)), for: .touchUpInside)
   }
 
   open func configureEmptyViewForEmpty(_ emptyView: EmptyView) {
     emptyView.image = TaskUIKitConfiguration.emptyViewImageForEmpty
-    emptyView.title = NSLocalizedString("No Content", bundle: Bundle.module, comment: "")
+    emptyView.text = NSLocalizedString("No Content", bundle: Bundle.module, comment: "")
   }
 
   // MARK:
