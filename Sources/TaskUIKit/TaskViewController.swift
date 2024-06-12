@@ -66,16 +66,16 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   open private(set) var emptyViewIfLoaded: EmptyView?
   lazy open private(set) var emptyView: EmptyView = {
     let emptyView = EmptyView()
+    emptyViewIfLoaded = emptyView
     emptyView.stateProvider = self
     emptyView.dataSource = self
-    emptyView.translatesAutoresizingMaskIntoConstraints = false
-    emptyViewIfLoaded = emptyView
     if let loadingIndicatorView = loadingIndicatorViewIfLoaded {
       view.insertSubview(emptyView, belowSubview: loadingIndicatorView)
     } else {
       view.addSubview(emptyView)
     }
 
+    emptyView.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
       emptyView.leadingAnchor.constraint(greaterThanOrEqualTo: view.layoutMarginsGuide.leadingAnchor),
       emptyView.centerXAnchor.constraint(equalTo: view.layoutMarginsGuide.centerXAnchor),
@@ -176,10 +176,10 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     headerRefreshControlIfLoaded?.endRefreshing()
 
     switch result {
-    case .success(let (content, paging)):
+    case .success(let (newContent, paging)):
       currentPaging = paging
       currentError = nil
-      applyData(content, page: page)
+      applyData(newContent, page: page)
       emptyView.reload()
 
       if let refreshingScrollView {
@@ -288,11 +288,11 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
   // MARK: Data
 
-  /// When `contents` is loaded from cache via `cachedContents`, `page` is `nil`.
-  open func applyData(_ contents: Contents?, page: Int?) {
-    if let contents, !isNilOrEmpty(contents) {
+  /// When `newContents` is loaded from cache via `cachedContents`, `page` is `nil`.
+  open func applyData(_ newContents: Contents?, page: Int?) {
+    if let newContents, !isNilOrEmpty(newContents) {
       let currentViewController = viewController
-      if let newViewController = viewController(for: contents, reusingViewController: currentViewController) {
+      if let newViewController = viewController(for: newContents, reusingViewController: currentViewController) {
         viewController = newViewController
         if newViewController != currentViewController {
           currentViewController?.removeFromParentIncludingView()
@@ -312,7 +312,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     }
   }
 
-  open func viewController(for contents: Contents, reusingViewController: UIViewController?) -> UIViewController? {
+  open func viewController(for newContents: Contents, reusingViewController: UIViewController?) -> UIViewController? {
     return nil
   }
 

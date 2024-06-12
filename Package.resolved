@@ -7,7 +7,7 @@
       "location" : "https://github.com/sereivoanyong/EmptyUIKit",
       "state" : {
         "branch" : "main",
-        "revision" : "e64a346d557febe38c97135c630cb1423d5da464"
+        "revision" : "8f1628c6df81657baa666f5cdaa00001d0428323"
       }
     },
     {
@@ -20,30 +20,12 @@
       }
     },
     {
-      "identity" : "realm-core",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/realm/realm-core.git",
-      "state" : {
-        "revision" : "9cf7ef4ad8e2f4c7a519c9a395ca3d253bb87aa8",
-        "version" : "14.6.2"
-      }
-    },
-    {
-      "identity" : "realm-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/realm/realm-swift",
-      "state" : {
-        "revision" : "6e0772315809ff0a11cd265126350039a6aac59d",
-        "version" : "10.50.1"
-      }
-    },
-    {
       "identity" : "swiftkit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/sereivoanyong/SwiftKit",
       "state" : {
         "branch" : "main",
-        "revision" : "931c21ae95dc9a901d7367bf76d7375c29b1e317"
+        "revision" : "145bebad156e10ab6c9d8f6bbdd6bf6ff72f1ef8"
       }
     }
   ],

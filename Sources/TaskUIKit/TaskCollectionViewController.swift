@@ -14,7 +14,7 @@ open class TaskCollectionViewController<Contents>: TaskViewController<Contents> 
   private var _collectionView: UICollectionView!
 
   /// `loadCollectionView()` and `makeCollectionViewLayout()` are not called if we assign it from nib
-  open weak var collectionView: UICollectionView! {
+  @IBOutlet open weak var collectionView: UICollectionView! {
     get {
       if _collectionView == nil {
         loadCollectionView()

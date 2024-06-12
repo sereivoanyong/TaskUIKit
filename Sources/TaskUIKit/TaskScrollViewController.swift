@@ -14,7 +14,7 @@ open class TaskScrollViewController<Contents>: TaskViewController<Contents> {
   private var _scrollView: UIScrollView!
 
   /// `loadScrollView()` is not called if we assign it from nib
-  open var scrollView: UIScrollView {
+  @IBOutlet open weak var scrollView: UIScrollView! {
     get {
       if _scrollView == nil {
         loadScrollView()

@@ -33,6 +33,7 @@ open class TaskTableViewController<Contents>: TaskViewController<Contents> {
     set {
       precondition(_tableView == nil, "Table view can only be set before it is loaded.")
       _tableView = newValue
+      tableViewDidLoad()
     }
   }
 
