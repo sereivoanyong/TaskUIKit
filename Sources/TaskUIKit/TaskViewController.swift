@@ -297,9 +297,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
         if newViewController != currentViewController {
           currentViewController?.removeFromParentIncludingView()
           addChildIncludingView(newViewController) { view, childView in
-            childView.frame = view.bounds
-            childView.autoresizingMask = .flexibleSize
-            view.insertSubview(childView, at: 0)
+            addView(childView, to: view)
           }
         }
       } else {
@@ -314,6 +312,12 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
   open func viewController(for newContents: Contents, reusingViewController: UIViewController?) -> UIViewController? {
     return nil
+  }
+
+  open func addView(_ childView: UIView, to view: UIView) {
+    childView.frame = view.bounds
+    childView.autoresizingMask = .flexibleSize
+    view.insertSubview(childView, at: 0)
   }
 
   // MARK: Empty View
