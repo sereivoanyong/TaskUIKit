@@ -10,9 +10,24 @@ import Combine
 import MJRefresh
 
 /// Subclass must implement these functions:
-/// `startTasks(page:cancellables:completion:)`
-/// `applyData(_:page:)`
+/// `startTasks(of:cancellables:completion:)`
+/// `applyData(_:source:)`
 open class TaskViewController<Contents>: UIViewController, EmptyViewStateProviding, EmptyViewDataSource {
+
+  public enum SourcedContents {
+
+    case response(Contents, isInitial: Bool)
+    case cache(Contents)
+
+    public var contents: Contents {
+      switch self {
+      case .response(let contents, _):
+        return contents
+      case .cache(let contents):
+        return contents
+      }
+    }
+  }
 
   open private(set) var isFirstViewAppear: Bool = true
 
@@ -32,7 +47,9 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     }
   }
 
-  open private(set) var currentPaging: PagingProtocol?
+  /// The request's paging response.
+  open private(set) var currentPaging: Paging?
+
   open private(set) var currentError: Error?
 
   open var contents: Contents? {
@@ -57,9 +74,6 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   open var refreshingScrollView: UIScrollView? {
     return nil
   }
-
-  open var automaticallyConfiguresHeaderRefreshControl: Bool = true
-  open var automaticallyConfiguresFooterRefreshControl: Bool = true
 
   open private(set) var viewController: UIViewController?
 
@@ -98,8 +112,15 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     return indicatorView
   }()
 
+#if !targetEnvironment(macCatalyst)
   open private(set) var headerRefreshControlIfLoaded: RefreshControl?
-  open private(set) var footerRefreshControlIfLoaded: RefreshControl?
+
+  open private(set) var footerRefreshControlIfLoaded: FiniteRefreshControl?
+
+  open var automaticallyConfiguresHeaderRefreshControl: Bool = true
+
+  open var automaticallyConfiguresFooterRefreshControl: Bool = true
+#endif
 
   // MARK: Init / Deinit
 
@@ -116,8 +137,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
       isFirstViewAppear = false
       if initialError == nil {
         if loadsTaskOnViewAppear {
-          // We do not need to reset as this is an initial load.
-          reloadTasks(reset: false, animated: true)
+          reloadTasks(reset: true, animated: true)
         } else {
           emptyView.reload()
         }
@@ -129,65 +149,92 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
   // MARK: Networking
 
-  @objc private func reloadTasks(_ sender: UIButton) {
-    reloadTasks(reset: true, animated: true)
-  }
-
   /// Reload tasks.
   ///
   /// - Parameters:
   ///   - reset: A flag whether to reset content and failure
   ///   - animated: Apply to loading indicator view (not refresh control nor load-more control)
   open func reloadTasks(reset: Bool, animated: Bool) {
+    assert(isViewLoaded, "`\(#function)` can only be called after view is loaded.")
+
+    cancelAllTasks()
+    isLoading = true
+
     if reset {
       currentPaging = nil
       currentError = nil
-      applyData(nil, page: 1)
+      applyData(nil)
     }
-    if animated {
-      loadingIndicatorView.startAnimating()
-    }
-    startTasks()
-  }
-
-  private func startTasks(page: Int = 1) {
-    assert(isViewLoaded, "`\(#function)` can only be called after view is loaded.")
-    cancelAllTasks()
-    isLoading = true
     emptyView.reload()
+
+    if animated {
+      if reset {
+        loadingIndicatorView.startAnimating()
+      } else {
+#if !targetEnvironment(macCatalyst)
+        headerRefreshControlIfLoaded?.beginRefreshing()
+#endif
+      }
+    }
+
     var newCancellables: [AnyCancellable] = []
-    startTasks(page: page, cancellables: &newCancellables) { [weak self] result in
-      guard let self else { return }
-      isLoading = false
-      tasksDidComplete(result: result, page: page)
+    startTasks(cancellables: &newCancellables) { [weak self] result in
+      self?.tasks(didCompleteWith: result)
     }
     cancellables = newCancellables
   }
 
-  /// `completionHandler` must be called on main queue.
-  open func startTasks(page: Int, cancellables: inout [AnyCancellable], completion: @escaping (Result<(Contents, PagingProtocol?), Error>) -> Void) {
+  open func loadTasksForNextPage(animated: Bool) {
+    assert(isViewLoaded, "`\(#function)` can only be called after view is loaded.")
+    guard let currentPaging else { return }
+
+    cancelAllTasks()
+    isLoading = true
+
+    if animated {
+#if !targetEnvironment(macCatalyst)
+      footerRefreshControlIfLoaded?.beginRefreshing()
+#endif
+    }
+
+    var newCancellables: [AnyCancellable] = []
+    startTasks(nextPageOf: currentPaging, cancellables: &newCancellables) { [weak self] result in
+      self?.tasks(nextPageOf: currentPaging, didCompleteWith: result)
+    }
+    cancellables = newCancellables
+  }
+
+  /// - Parameters:
+  ///   - pagingForNext: the paging is used as reference to load next page. This is `nil` for initial page (1)
+  ///   - cancellables: a disposable bag to store chainable requests.
+  ///   - completion: must be called on main queue.
+  open func startTasks(nextPageOf paging: Paging? = nil, cancellables: inout [AnyCancellable], completion: @escaping (Result<(Contents, Paging?), Error>) -> Void) {
     fatalError("Subclass must override")
   }
 
   // MARK: Task Lifecycle
 
-  open func tasksDidComplete(result: Result<(Contents, PagingProtocol?), Error>, page: Int) {
+  open func tasks(nextPageOf pagingForNext: Paging? = nil, didCompleteWith result: Result<(Contents, Paging?), Error>) {
+    isLoading = false
     loadingIndicatorViewIfLoaded?.stopAnimating()
+#if !targetEnvironment(macCatalyst)
     headerRefreshControlIfLoaded?.endRefreshing()
+#endif
 
     switch result {
-    case .success(let (newContent, paging)):
-      currentPaging = paging
+    case .success(let (responseContents, responsePaging)):
+      currentPaging = responsePaging
       currentError = nil
-      applyData(newContent, page: page)
+      applyData(.response(responseContents, isInitial: pagingForNext == nil))
       emptyView.reload()
 
+#if !targetEnvironment(macCatalyst)
       if let refreshingScrollView {
         if automaticallyConfiguresHeaderRefreshControl {
           configureHeaderRefreshControl(for: refreshingScrollView)
         }
 
-        if let paging, paging.hasNextPage() {
+        if let responsePaging, responsePaging.hasNextPage() {
           if let footerRefreshControlIfLoaded {
             footerRefreshControlIfLoaded.endRefreshing()
           } else {
@@ -197,102 +244,32 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
           }
         } else {
           if let footerRefreshControlIfLoaded {
-            if let footerRefreshControlIfLoaded = footerRefreshControlIfLoaded as? FiniteRefreshControl {
-              footerRefreshControlIfLoaded.endRefreshingWithNoMoreData()
-              footerRefreshControlIfLoaded.isHidden = true
-            } else {
-              footerRefreshControlIfLoaded.endRefreshing()
-            }
+            footerRefreshControlIfLoaded.endRefreshingWithNoMoreData()
+            footerRefreshControlIfLoaded.isHidden = true
           }
         }
       }
+#endif
 
     case .failure(let error):
-      var isHandled: Bool = false
-      if page == 1 && currentPaging == nil {
-        let cachedContents = cachedContents
-        if !isNilOrEmpty(cachedContents) {
-          currentError = error
-          applyData(cachedContents, page: nil)
-          emptyView.reload()
-          isHandled = true
+      currentError = error
+      if pagingForNext == nil {
+        if let cachedContents {
+          applyData(.cache(cachedContents))
         }
       }
-      if !isHandled {
-        currentError = error
-        emptyView.reload()
-      }
 
+      emptyView.reload()
+#if !targetEnvironment(macCatalyst)
       footerRefreshControlIfLoaded?.endRefreshing()
-    }
-  }
-
-  open func cancelAllTasks() {
-    for cancellable in cancellables {
-      cancellable.cancel()
-    }
-  }
-
-  private func configureHeaderRefreshControl(for scrollView: UIScrollView) {
-#if targetEnvironment(macCatalyst)
-#else
-    guard headerRefreshControlIfLoaded == nil else { return }
-
-    if let refreshControlProvider = TaskUIKitConfiguration.headerRefreshControlProvider {
-      let refreshControl = refreshControlProvider(scrollView, { [weak self] in
-        guard let self else { return }
-        didPullToRefresh()
-      })
-      headerRefreshControlIfLoaded = refreshControl
-      return
-    }
-
-    let refreshControl = UIRefreshControl()
-    refreshControl.addTarget(self, action: #selector(didPullToRefresh), for: .valueChanged)
-    scrollView.refreshControl = refreshControl
-    headerRefreshControlIfLoaded = refreshControl
 #endif
-  }
-
-  private func configureFooterRefreshControl(for scrollView: UIScrollView) {
-#if targetEnvironment(macCatalyst)
-#else
-    guard footerRefreshControlIfLoaded == nil else { return }
-
-    if let refreshControlProvider = TaskUIKitConfiguration.footerRefreshControlProvider {
-      let refreshControl = refreshControlProvider(scrollView, { [weak self] in
-        guard let self else { return }
-        didPullToLoadMore()
-      })
-      footerRefreshControlIfLoaded = refreshControl
-      return
     }
-
-    let footer = MJRefreshAutoNormalFooter { [unowned self] in
-      startTasks(page: currentPaging.map { $0.page + 1 } ?? 1)
-    }
-    footer.stateLabel?.isHidden = true
-    footer.isRefreshingTitleHidden = true
-    scrollView.mj_footer = footer
-    footerRefreshControlIfLoaded = footer
-#endif
   }
 
-  @objc private func didPullToRefresh() {
-    reloadTasks(reset: false, animated: false)
-  }
-
-  @objc private func didPullToLoadMore() {
-    startTasks(page: currentPaging.map { $0.page + 1 } ?? 1)
-  }
-
-  // MARK: Data
-
-  /// When `newContents` is loaded from cache via `cachedContents`, `page` is `nil`.
-  open func applyData(_ newContents: Contents?, page: Int?) {
-    if let newContents, !isNilOrEmpty(newContents) {
+  open func applyData(_ contents: SourcedContents?) {
+    if let contents, !isNilOrEmpty(contents.contents) {
       let currentViewController = viewController
-      if let newViewController = viewController(for: newContents, reusingViewController: currentViewController) {
+      if let newViewController = viewController(for: contents.contents, reusingViewController: currentViewController) {
         viewController = newViewController
         if newViewController != currentViewController {
           currentViewController?.removeFromParentIncludingView()
@@ -320,6 +297,72 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     view.insertSubview(childView, at: 0)
   }
 
+  open func cancelAllTasks() {
+    for cancellable in cancellables {
+      cancellable.cancel()
+    }
+  }
+
+  // MARK: Actions
+
+  @objc private func didTapReload(_ sender: UIButton) {
+    reloadTasks(reset: true, animated: true)
+  }
+
+#if !targetEnvironment(macCatalyst)
+  @objc private func didPullToRefresh() {
+    reloadTasks(reset: false, animated: false)
+  }
+
+  @objc private func didPullToLoadMore() {
+    loadTasksForNextPage(animated: false)
+  }
+#endif
+
+  // MARK: Header / Footer
+
+#if !targetEnvironment(macCatalyst)
+  private func configureHeaderRefreshControl(for scrollView: UIScrollView) {
+    guard headerRefreshControlIfLoaded == nil else { return }
+
+    if let refreshControlProvider = TaskUIKitConfiguration.headerRefreshControlProvider {
+      let refreshControl = refreshControlProvider(scrollView, { [weak self] in
+        guard let self else { return }
+        didPullToRefresh()
+      })
+      headerRefreshControlIfLoaded = refreshControl
+      return
+    }
+
+    let refreshControl = UIRefreshControl()
+    refreshControl.addTarget(self, action: #selector(didPullToRefresh), for: .valueChanged)
+    scrollView.refreshControl = refreshControl
+    headerRefreshControlIfLoaded = refreshControl
+
+  }
+
+  private func configureFooterRefreshControl(for scrollView: UIScrollView) {
+    guard footerRefreshControlIfLoaded == nil else { return }
+
+    if let refreshControlProvider = TaskUIKitConfiguration.footerRefreshControlProvider {
+      let refreshControl = refreshControlProvider(scrollView, { [weak self] in
+        guard let self else { return }
+        didPullToLoadMore()
+      })
+      footerRefreshControlIfLoaded = refreshControl
+      return
+    }
+
+    let footer = MJRefreshAutoNormalFooter { [unowned self] in
+      didPullToLoadMore()
+    }
+    footer.stateLabel?.isHidden = true
+    footer.isRefreshingTitleHidden = true
+    scrollView.mj_footer = footer
+    footerRefreshControlIfLoaded = footer
+  }
+#endif
+
   // MARK: Empty View
 
   open func configureEmptyView(_ emptyView: EmptyView, for error: Error) {
@@ -327,7 +370,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     emptyView.text = NSLocalizedString("Unable to Load", bundle: Bundle.module, comment: "")
     emptyView.secondaryText = error.localizedDescription
     emptyView.button.setTitle(NSLocalizedString("Reload", bundle: Bundle.module, comment: ""), for: .normal)
-    emptyView.button.addTarget(self, action: #selector(reloadTasks(_:)), for: .touchUpInside)
+    emptyView.button.addTarget(self, action: #selector(didTapReload), for: .touchUpInside)
   }
 
   open func configureEmptyViewForEmpty(_ emptyView: EmptyView) {

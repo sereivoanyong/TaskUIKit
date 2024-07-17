@@ -13,13 +13,16 @@ extension URLSessionTask: Cancellable { }
 
 public enum TaskUIKitConfiguration {
 
+#if !targetEnvironment(macCatalyst)
   public static var headerRefreshControlProvider: ((UIScrollView, @escaping() -> Void) -> RefreshControl)?
-  public static var footerRefreshControlProvider: ((UIScrollView, @escaping() -> Void) -> RefreshControl)?
+  public static var footerRefreshControlProvider: ((UIScrollView, @escaping() -> Void) -> FiniteRefreshControl)?
+#endif
 
   public static var emptyViewImageForEmpty: UIImage?
   public static var emptyViewImageForError: UIImage?
 }
 
+#if !targetEnvironment(macCatalyst)
 public protocol RefreshControl: UIView {
 
   func beginRefreshing()
@@ -36,3 +39,4 @@ extension UIRefreshControl: RefreshControl { }
 extension MJRefreshHeader: RefreshControl { }
 
 extension MJRefreshFooter: FiniteRefreshControl { }
+#endif

@@ -7,7 +7,7 @@
 import UIKit
 
 /// Subclass must implement these functions:
-/// `startTasks(page:cancellables:completion:)`
+/// `startTasks(of:cancellables:completion:)`
 open class TaskCollectionListViewController<Collection: RangeReplaceableCollection>: TaskCollectionViewController<Collection> where Collection.Index == Int {
 
   open var objects: Collection = .init()
@@ -16,17 +16,27 @@ open class TaskCollectionListViewController<Collection: RangeReplaceableCollecti
     return objects
   }
 
-  open override func applyData(_ newObjects: Collection?, page: Int?) {
-    let newObjects = newObjects ?? .init()
-    if page == nil || page == 1 {
+  open override func applyData(_ contents: SourcedContents?) {
+    guard let contents else {
+      objects.removeAll()
+      collectionView.reloadData()
+      return
+    }
+    switch contents {
+    case .response(let newObjects, let isInitial):
+      if isInitial {
+        objects = newObjects
+        collectionView.reloadData()
+      } else {
+        let oldCount = objects.count
+        objects.append(contentsOf: newObjects)
+        let currentCount = objects.count
+        let section = sectionForObjects
+        collectionView.insertItems(at: (oldCount..<currentCount).map { IndexPath(item: $0, section: section) })
+      }
+    case .cache(let newObjects):
       objects = newObjects
       collectionView.reloadData()
-    } else {
-      let oldCount = objects.count
-      objects.append(contentsOf: newObjects)
-      let currentCount = objects.count
-      let section = sectionForObjects
-      collectionView.insertItems(at: (oldCount..<currentCount).map { IndexPath(item: $0, section: section) })
     }
   }
 

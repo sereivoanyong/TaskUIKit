@@ -7,8 +7,8 @@
 import UIKit
 
 /// Subclass must implement these functions:
-/// `startTasks(page:cancellables:completion:)`
-/// `applyData(_:page:)`
+/// `startTasks(of:cancellables:completion:)`
+/// `applyData(_:source:)`
 open class TaskTableViewController<Contents>: TaskViewController<Contents> {
 
   /// Default is `UITableView.self`. Custom class must implement `init(frame:style:)`.

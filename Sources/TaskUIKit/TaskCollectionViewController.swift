@@ -7,8 +7,8 @@
 import UIKit
 
 /// Subclass must implement these functions:
-/// `startTasks(page:cancellables:completion:)`
-/// `applyData(_:page:)`
+/// `startTasks(of:cancellables:completion:)`
+/// `applyData(_:source:)`
 open class TaskCollectionViewController<Contents>: TaskViewController<Contents> {
 
   private var _collectionView: UICollectionView!
