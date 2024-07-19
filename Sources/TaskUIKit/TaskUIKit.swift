@@ -9,8 +9,6 @@
 import UIKit
 import MJRefresh
 
-extension URLSessionTask: Cancellable { }
-
 public enum TaskUIKitConfiguration {
 
 #if !targetEnvironment(macCatalyst)
@@ -22,21 +20,4 @@ public enum TaskUIKitConfiguration {
   public static var emptyViewImageForError: UIImage?
 }
 
-#if !targetEnvironment(macCatalyst)
-public protocol RefreshControl: UIView {
-
-  func beginRefreshing()
-  func endRefreshing()
-}
-
-public protocol FiniteRefreshControl: RefreshControl {
-
-  func endRefreshingWithNoMoreData()
-}
-
-extension UIRefreshControl: RefreshControl { }
-
-extension MJRefreshHeader: RefreshControl { }
-
-extension MJRefreshFooter: FiniteRefreshControl { }
-#endif
+extension URLSessionTask: Cancellable { }
