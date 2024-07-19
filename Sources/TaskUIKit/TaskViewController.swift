@@ -214,7 +214,16 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
   // MARK: Task Lifecycle
 
+  private func canProcess(_ result: Result<(Contents, Paging?), Error>) -> Bool {
+    if case .failure(let error) = result, let error = error as? CancelingError {
+      return !error.isCancelled
+    }
+    return true
+  }
+
   open func tasks(nextPageOf pagingForNext: Paging? = nil, didCompleteWith result: Result<(Contents, Paging?), Error>) {
+    guard canProcess(result) else { return }
+
     isLoading = false
     loadingIndicatorViewIfLoaded?.stopAnimating()
 #if !targetEnvironment(macCatalyst)
