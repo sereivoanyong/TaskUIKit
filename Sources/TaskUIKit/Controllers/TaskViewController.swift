@@ -343,10 +343,11 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
       return
     }
 
-    let refreshControl = UIRefreshControl()
-    refreshControl.addTarget(self, action: #selector(didPullToRefresh), for: .valueChanged)
-    scrollView.refreshControl = refreshControl
-    headerRefreshControlIfLoaded = refreshControl
+    let header = MJRefreshNormalHeader { [unowned self] in
+      didPullToRefresh()
+    }
+    scrollView.mj_header = header
+    headerRefreshControlIfLoaded = header
 
   }
 
