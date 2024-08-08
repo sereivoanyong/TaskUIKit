@@ -263,8 +263,16 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     case .failure(let error):
       currentError = error
       if pagingForNext == nil {
-        if let cachedContents {
+        if let cachedContents, !isNilOrEmpty(cachedContents) {
           applyData(.cache(cachedContents))
+
+#if !targetEnvironment(macCatalyst)
+          if let refreshingScrollView {
+            if automaticallyConfiguresHeaderRefreshControl {
+              configureHeaderRefreshControl(for: refreshingScrollView)
+            }
+          }
+#endif
         }
       }
 
