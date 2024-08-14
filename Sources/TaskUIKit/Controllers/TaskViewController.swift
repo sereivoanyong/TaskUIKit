@@ -9,6 +9,12 @@ import EmptyUIKit
 import Combine
 import MJRefresh
 
+public enum TaskResult<Contents> {
+
+  case success(Contents, Paging? = nil, Any? = nil)
+  case failure(Error)
+}
+
 /// Subclass must implement these functions:
 /// `startTasks(of:cancellables:completion:)`
 /// `applyData(_:source:)`
@@ -163,7 +169,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     if reset {
       currentPaging = nil
       currentError = nil
-      applyData(nil)
+      applyData(nil, userInfo: nil)
     }
     emptyView.reload()
 
@@ -208,20 +214,20 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   ///   - pagingForNext: the paging is used as reference to load next page. This is `nil` for initial page (1)
   ///   - cancellables: a disposable bag to store chainable requests.
   ///   - completion: must be called on main queue.
-  open func startTasks(nextPageOf paging: Paging? = nil, cancellables: inout [AnyCancellable], completion: @escaping (Result<(Contents, Paging?), Error>) -> Void) {
+  open func startTasks(nextPageOf paging: Paging? = nil, cancellables: inout [AnyCancellable], completion: @escaping (TaskResult<Contents>) -> Void) {
     fatalError("Subclass must override")
   }
 
   // MARK: Task Lifecycle
 
-  private func canProcess(_ result: Result<(Contents, Paging?), Error>) -> Bool {
+  private func canProcess(_ result: TaskResult<Contents>) -> Bool {
     if case .failure(let error) = result, let error = error as? CancelingError {
       return !error.isCancelled
     }
     return true
   }
 
-  open func tasks(nextPageOf pagingForNext: Paging? = nil, didCompleteWith result: Result<(Contents, Paging?), Error>) {
+  open func tasks(nextPageOf pagingForNext: Paging? = nil, didCompleteWith result: TaskResult<Contents>) {
     guard canProcess(result) else { return }
 
     isLoading = false
@@ -231,10 +237,10 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 #endif
 
     switch result {
-    case .success(let (responseContents, responsePaging)):
+    case .success(let responseContents, let responsePaging, let userInfo):
       currentPaging = responsePaging
       currentError = nil
-      applyData(.response(responseContents, isInitial: pagingForNext == nil))
+      applyData(.response(responseContents, isInitial: pagingForNext == nil), userInfo: userInfo)
       emptyView.reload()
 
 #if !targetEnvironment(macCatalyst)
@@ -264,7 +270,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
       currentError = error
       if pagingForNext == nil {
         if let cachedContents, !isNilOrEmpty(cachedContents) {
-          applyData(.cache(cachedContents))
+          applyData(.cache(cachedContents), userInfo: nil)
 
 #if !targetEnvironment(macCatalyst)
           if let refreshingScrollView {
@@ -283,7 +289,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     }
   }
 
-  open func applyData(_ contents: SourcedContents?) {
+  open func applyData(_ contents: SourcedContents?, userInfo: Any?) {
     if let contents, !isNilOrEmpty(contents.contents) {
       let currentViewController = viewController
       if let newViewController = viewController(for: contents.contents, reusingViewController: currentViewController) {

@@ -16,7 +16,7 @@ open class TaskTableListViewController<Collection: RangeReplaceableCollection>: 
     return objects
   }
 
-  open override func applyData(_ contents: SourcedContents?) {
+  open override func applyData(_ contents: SourcedContents?, userInfo: Any?) {
     guard let contents else {
       objects.removeAll()
       tableView.reloadData()
