@@ -11,6 +11,10 @@ import UIKit
 /// `applyData(_:source:)`
 open class TaskCollectionViewController<Contents>: TaskViewController<Contents> {
 
+  open class var collectionViewClass: UICollectionView.Type {
+    return UICollectionView.self
+  }
+
   private var _collectionView: UICollectionView!
 
   /// `loadCollectionView()` and `makeCollectionViewLayout()` are not called if we assign it from nib
@@ -49,11 +53,11 @@ open class TaskCollectionViewController<Contents>: TaskViewController<Contents> 
   // MARK: Collection View Lifecycle
 
   open func makeCollectionViewLayout() -> UICollectionViewLayout {
-    fatalError()
+    fatalError("\(#function) has not been implemented")
   }
 
   open func loadCollectionView() {
-    let collectionView = UICollectionView(frame: UIScreen.main.bounds, collectionViewLayout: collectionViewLayout)
+    let collectionView = Self.collectionViewClass.init(frame: UIScreen.main.bounds, collectionViewLayout: collectionViewLayout)
     collectionView.backgroundColor = .clear
     collectionView.preservesSuperviewLayoutMargins = true
     collectionView.alwaysBounceHorizontal = false
