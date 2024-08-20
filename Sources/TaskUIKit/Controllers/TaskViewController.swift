@@ -218,6 +218,22 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     fatalError("Subclass must override")
   }
 
+  open func resetTask() {
+    cancelAllTasks()
+
+    isLoading = false
+    loadingIndicatorViewIfLoaded?.stopAnimating()
+#if !targetEnvironment(macCatalyst)
+    headerRefreshControlIfLoaded?.endRefreshing()
+    footerRefreshControlIfLoaded?.endRefreshing()
+#endif
+
+    currentPaging = nil
+    currentError = nil
+    applyData(nil, userInfo: nil)
+    emptyView.reload()
+  }
+
   // MARK: Task Lifecycle
 
   private func canProcess(_ result: TaskResult<Contents>) -> Bool {
