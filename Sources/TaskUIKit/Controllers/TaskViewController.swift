@@ -420,7 +420,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
   // MARK:
 
-  public func state(for emptyView: EmptyView) -> EmptyView.State? {
+  open func state(for emptyView: EmptyView) -> EmptyView.State? {
     if isLoading {
       return nil
     }
@@ -436,7 +436,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     return .empty
   }
 
-  public func emptyView(_ emptyView: EmptyView, configureContentFor state: EmptyView.State) {
+  open func emptyView(_ emptyView: EmptyView, configureContentFor state: EmptyView.State) {
     switch state {
     case .error(let error):
       configureEmptyView(emptyView, for: error)
