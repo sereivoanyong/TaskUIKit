@@ -16,7 +16,7 @@ open class TaskCollectionListViewController<Collection: RangeReplaceableCollecti
     return objects
   }
 
-  open override func applyData(_ contents: SourcedContents?, userInfo: Any?) {
+  open override func applyData(_ contents: SourcedContents?, userInfo: TaskUserInfo?) {
     guard let contents else {
       objects.removeAll()
       collectionView.reloadData()

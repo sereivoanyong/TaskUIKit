@@ -9,9 +9,15 @@ import EmptyUIKit
 import Combine
 import MJRefresh
 
+open class TaskUserInfo {
+
+  public init() {
+  }
+}
+
 public enum TaskResult<Contents> {
 
-  case success(Contents, Paging? = nil, Any? = nil)
+  case success(Contents, Paging? = nil, TaskUserInfo? = nil)
   case failure(Error)
 }
 
@@ -305,7 +311,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     }
   }
 
-  open func applyData(_ contents: SourcedContents?, userInfo: Any?) {
+  open func applyData(_ contents: SourcedContents?, userInfo: TaskUserInfo?) {
     if let contents, !isNilOrEmpty(contents.contents) {
       let currentViewController = viewController
       if let newViewController = viewController(for: contents.contents, reusingViewController: currentViewController) {
