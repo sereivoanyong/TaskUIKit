@@ -28,12 +28,12 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
   public enum SourcedContents {
 
-    case response(Contents, isInitial: Bool)
+    case response(Contents, isInitial: Bool, TaskUserInfo? = nil)
     case cache(Contents)
 
     public var contents: Contents {
       switch self {
-      case .response(let contents, _):
+      case .response(let contents, _, _):
         return contents
       case .cache(let contents):
         return contents
@@ -175,9 +175,12 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     if reset {
       currentPaging = nil
       currentError = nil
-      applyData(nil, userInfo: nil)
+      applyData(nil) { [unowned self] in
+        emptyView.reload()
+      }
+    } else {
+      emptyView.reload()
     }
-    emptyView.reload()
 
     if animated {
       if reset {
@@ -236,8 +239,9 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
     currentPaging = nil
     currentError = nil
-    applyData(nil, userInfo: nil)
-    emptyView.reload()
+    applyData(nil) { [unowned self] in
+      emptyView.reload()
+    }
   }
 
   // MARK: Task Lifecycle
@@ -262,45 +266,52 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     case .success(let responseContents, let responsePaging, let userInfo):
       currentPaging = responsePaging
       currentError = nil
-      applyData(.response(responseContents, isInitial: pagingForNext == nil), userInfo: userInfo)
-      emptyView.reload()
+      applyData(.response(responseContents, isInitial: pagingForNext == nil, userInfo)) { [unowned self] in
+        emptyView.reload()
 
 #if !targetEnvironment(macCatalyst)
-      if let refreshingScrollView {
-        if automaticallyConfiguresHeaderRefreshControl {
-          configureHeaderRefreshControl(for: refreshingScrollView)
-        }
+        if let refreshingScrollView {
+          if automaticallyConfiguresHeaderRefreshControl {
+            configureHeaderRefreshControl(for: refreshingScrollView)
+          }
 
-        if let responsePaging, responsePaging.hasNextPage() {
-          if let footerRefreshControlIfLoaded {
-            footerRefreshControlIfLoaded.endRefreshing()
+          if let responsePaging, responsePaging.hasNextPage() {
+            if let footerRefreshControlIfLoaded {
+              footerRefreshControlIfLoaded.endRefreshing()
+            } else {
+              if automaticallyConfiguresFooterRefreshControl {
+                configureFooterRefreshControl(for: refreshingScrollView)
+              }
+            }
           } else {
-            if automaticallyConfiguresFooterRefreshControl {
-              configureFooterRefreshControl(for: refreshingScrollView)
+            if let footerRefreshControlIfLoaded {
+              footerRefreshControlIfLoaded.endRefreshingWithNoMoreData()
+              footerRefreshControlIfLoaded.isHidden = true
             }
           }
-        } else {
-          if let footerRefreshControlIfLoaded {
-            footerRefreshControlIfLoaded.endRefreshingWithNoMoreData()
-            footerRefreshControlIfLoaded.isHidden = true
-          }
         }
-      }
 #endif
+      }
 
     case .failure(let error):
       currentError = error
       if pagingForNext == nil {
         if let cachedContents, !isNilOrEmpty(cachedContents) {
-          applyData(.cache(cachedContents), userInfo: nil)
+          applyData(.cache(cachedContents)) { [unowned self] in
+            emptyView.reload()
 
 #if !targetEnvironment(macCatalyst)
-          if let refreshingScrollView {
-            if automaticallyConfiguresHeaderRefreshControl {
-              configureHeaderRefreshControl(for: refreshingScrollView)
+            if let refreshingScrollView {
+              if automaticallyConfiguresHeaderRefreshControl {
+                configureHeaderRefreshControl(for: refreshingScrollView)
+              }
             }
-          }
+            if let footerRefreshControlIfLoaded {
+              footerRefreshControlIfLoaded.endRefreshing()
+            }
 #endif
+          }
+          return
         }
       }
 
@@ -311,7 +322,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     }
   }
 
-  open func applyData(_ contents: SourcedContents?, userInfo: TaskUserInfo?) {
+  open func applyData(_ contents: SourcedContents?, completion: @escaping () -> Void) {
     if let contents, !isNilOrEmpty(contents.contents) {
       let currentViewController = viewController
       if let newViewController = viewController(for: contents.contents, reusingViewController: currentViewController) {
@@ -330,6 +341,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
       viewController?.removeFromParentIncludingView()
       viewController = nil
     }
+    completion()
   }
 
   open func viewController(for newContents: Contents, reusingViewController: UIViewController?) -> UIViewController? {

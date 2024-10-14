@@ -16,14 +16,15 @@ open class TaskCollectionListViewController<Collection: RangeReplaceableCollecti
     return objects
   }
 
-  open override func applyData(_ contents: SourcedContents?, userInfo: TaskUserInfo?) {
+  open override func applyData(_ contents: SourcedContents?, completion: @escaping () -> Void) {
     guard let contents else {
       objects.removeAll()
       collectionView.reloadData()
+      completion()
       return
     }
     switch contents {
-    case .response(let newObjects, let isInitial):
+    case .response(let newObjects, let isInitial, _):
       if isInitial {
         objects = newObjects
         collectionView.reloadData()
@@ -34,9 +35,11 @@ open class TaskCollectionListViewController<Collection: RangeReplaceableCollecti
         let section = sectionForObjects
         collectionView.insertItems(at: (oldCount..<currentCount).map { IndexPath(item: $0, section: section) })
       }
+      completion()
     case .cache(let newObjects):
       objects = newObjects
       collectionView.reloadData()
+      completion()
     }
   }
 

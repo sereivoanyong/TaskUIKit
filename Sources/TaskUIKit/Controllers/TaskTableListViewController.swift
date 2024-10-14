@@ -16,14 +16,15 @@ open class TaskTableListViewController<Collection: RangeReplaceableCollection>: 
     return objects
   }
 
-  open override func applyData(_ contents: SourcedContents?, userInfo: TaskUserInfo?) {
+  open override func applyData(_ contents: SourcedContents?, completion: @escaping () -> Void) {
     guard let contents else {
       objects.removeAll()
       tableView.reloadData()
+      completion()
       return
     }
     switch contents {
-    case .response(let newObjects, let isInitial):
+    case .response(let newObjects, let isInitial, _):
       if isInitial {
         objects = newObjects
         tableView.reloadData()
@@ -34,9 +35,11 @@ open class TaskTableListViewController<Collection: RangeReplaceableCollection>: 
         let section = sectionForObjects
         tableView.insertRows(at: (oldCount..<currentCount).map { IndexPath(row: $0, section: section) }, with: .automatic)
       }
+      completion()
     case .cache(let newObjects):
       objects = newObjects
       tableView.reloadData()
+      completion()
     }
   }
 
