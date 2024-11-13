@@ -26,6 +26,12 @@ public enum TaskResult<Contents> {
 /// `applyData(_:source:)`
 open class TaskViewController<Contents>: UIViewController, EmptyViewStateProviding, EmptyViewDataSource {
 
+  public enum InitialAction {
+
+    case reload
+    case loadFromCacheOrReload
+  }
+
   public enum SourcedContents {
 
     case response(Contents, isInitial: Bool, TaskUserInfo? = nil)
@@ -68,19 +74,15 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     fatalError()
   }
 
-  // This is used when first page failed
-  open var cachedContents: Contents? {
-    return nil
-  }
-
   open var initialError: Error? {
     return nil
   }
 
-  open private(set) var isLoading: Bool = false
+  /// If `initialError` is `nil`, this property is performed.
+  /// Set to `nil` to do nothing. We will have to manually reload task.
+  open var initialAction: InitialAction? = .reload
 
-  /// If `contents` isn't nil nor empty, this property is ignored. Setting this property after `viewIsAppearing(_:)` has no effect.
-  open var loadsTaskOnViewAppear: Bool = true
+  open private(set) var isLoading: Bool = false
 
   /// Returns the scroll view for pull-to-refresh
   open var refreshingScrollView: UIScrollView? {
@@ -147,14 +149,31 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
     if isFirstViewAppear {
       isFirstViewAppear = false
-      if initialError == nil {
-        if loadsTaskOnViewAppear {
-          reloadTasks(reset: true, animated: true)
-        } else {
-          emptyView.reload()
-        }
-      } else {
+      if initialError != nil {
         emptyView.reload()
+      } else {
+        if let initialAction {
+          switch initialAction {
+          case .reload:
+            reloadTasks(reset: true, animated: true)
+          case .loadFromCacheOrReload:
+            if let cachedContents = loadCachedContents(), !isNilOrEmpty(cachedContents) {
+              applyData(.cache(cachedContents)) { [unowned self] in
+                emptyView.reload()
+
+#if !targetEnvironment(macCatalyst)
+                if let refreshingScrollView {
+                  if automaticallyConfiguresHeaderRefreshControl {
+                    configureHeaderRefreshControl(for: refreshingScrollView)
+                  }
+                }
+#endif
+              }
+            } else {
+              reloadTasks(reset: true, animated: true)
+            }
+          }
+        }
       }
     }
   }
@@ -296,7 +315,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     case .failure(let error):
       currentError = error
       if pagingForNext == nil {
-        if let cachedContents, !isNilOrEmpty(cachedContents) {
+        if let cachedContents = loadCachedContents(), !isNilOrEmpty(cachedContents) {
           applyData(.cache(cachedContents)) { [unowned self] in
             emptyView.reload()
 
@@ -320,6 +339,11 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
       footerRefreshControlIfLoaded?.endRefreshing()
 #endif
     }
+  }
+
+  // This is used when first page failed
+  open func loadCachedContents() -> Contents? {
+    return nil
   }
 
   open func applyData(_ contents: SourcedContents?, completion: @escaping () -> Void) {
