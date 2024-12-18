@@ -7,7 +7,7 @@
       "location" : "https://github.com/sereivoanyong/EmptyUIKit",
       "state" : {
         "branch" : "main",
-        "revision" : "8f1628c6df81657baa666f5cdaa00001d0428323"
+        "revision" : "44e2d1dc0694918654872fec248c57d3c917dbc0"
       }
     },
     {
@@ -25,7 +25,7 @@
       "location" : "https://github.com/sereivoanyong/SwiftKit",
       "state" : {
         "branch" : "main",
-        "revision" : "145bebad156e10ab6c9d8f6bbdd6bf6ff72f1ef8"
+        "revision" : "f809c3d45163ee03a55d3274f0705b320d8bf0b7"
       }
     }
   ],

@@ -62,6 +62,6 @@ open class TaskTableListViewController<Collection: RangeReplaceableCollection>: 
 
   @objc(tableView:cellForRowAtIndexPath:)
   open func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-    fatalError()
+    fatalError("\(#function) must be overriden")
   }
 }
