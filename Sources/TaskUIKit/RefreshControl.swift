@@ -15,16 +15,23 @@ public protocol RefreshControl: UIView {
 
 public protocol FiniteRefreshControl: RefreshControl {
 
-  func endRefreshingWithNoMoreData()
+  func endRefreshingAndHide()
 }
 
-extension UIRefreshControl: RefreshControl { }
+extension UIRefreshControl: RefreshControl {
+}
 #endif
 
 #if !targetEnvironment(macCatalyst) && canImport(MJRefresh)
 import MJRefresh
 
-extension MJRefreshHeader: RefreshControl { }
+extension MJRefreshHeader: RefreshControl {
+}
 
-extension MJRefreshFooter: FiniteRefreshControl { }
+extension MJRefreshFooter: FiniteRefreshControl {
+
+  public func endRefreshingAndHide() {
+    isHidden = true
+  }
+}
 #endif

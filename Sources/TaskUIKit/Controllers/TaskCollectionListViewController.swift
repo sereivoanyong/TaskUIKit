@@ -62,6 +62,6 @@ open class TaskCollectionListViewController<Collection: RangeReplaceableCollecti
 
   @objc(collectionView:cellForItemAtIndexPath:)
   open func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-    fatalError()
+    fatalError("\(#function) must be overriden")
   }
 }

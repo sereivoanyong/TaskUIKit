@@ -53,7 +53,7 @@ open class TaskCollectionViewController<Contents>: TaskViewController<Contents> 
   // MARK: Collection View Lifecycle
 
   open func makeCollectionViewLayout() -> UICollectionViewLayout {
-    fatalError("\(#function) has not been implemented")
+    fatalError("\(#function) must be overriden")
   }
 
   open func loadCollectionView() {

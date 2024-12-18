@@ -20,4 +20,16 @@ public enum TaskUIKitConfiguration {
   public static var emptyViewImageForError: UIImage?
 }
 
-extension URLSessionTask: Cancellable { }
+public enum TaskResult<Contents> {
+
+  case success(Contents, Paging? = nil, TaskUserInfo? = nil)
+  case failure(Error)
+}
+
+open class TaskUserInfo {
+
+  public init() {
+  }
+}
+
+extension URLSessionTask: @retroactive Cancellable { }
