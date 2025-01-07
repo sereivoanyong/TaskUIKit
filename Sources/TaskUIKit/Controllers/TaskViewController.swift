@@ -20,6 +20,12 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     case loadFromCacheOrReload
   }
 
+  public enum Source {
+
+    case response
+    case cache
+  }
+
   public enum SourcedContents {
 
     case response(Contents, isInitial: Bool, TaskUserInfo? = nil)
@@ -143,7 +149,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
           case .reload:
             reloadTasks(reset: false, animated: true)
           case .loadFromCacheOrReload:
-            if let cachedContents = loadCachedContents(), !isNilOrEmpty(cachedContents) {
+            if let cachedContents = loadContents(for: .cache), !isNilOrEmpty(cachedContents) {
               applyData(.cache(cachedContents)) { [unowned self] in
                 emptyView.reload()
 
@@ -259,7 +265,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     case .failure(let error):
       currentError = error
       if pagingForNext == nil {
-        if let cachedContents = loadCachedContents(), !isNilOrEmpty(cachedContents) {
+        if let cachedContents = loadContents(for: .cache), !isNilOrEmpty(cachedContents) {
           applyData(.cache(cachedContents)) { [unowned self] in
             tasksDidEnd(contents: cachedContents, paging: nil)
           }
@@ -305,8 +311,8 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 #endif
   }
 
-  // This is used when first page failed
-  open func loadCachedContents() -> Contents? {
+  /// This is called with `cache` as source when first page failed
+  open func loadContents(for source: Source) -> Contents? {
     return nil
   }
 
