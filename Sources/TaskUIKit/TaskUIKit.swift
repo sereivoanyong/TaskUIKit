@@ -4,20 +4,22 @@
 //  Created by Sereivoan Yong on 11/24/23.
 //
 
-@_exported import Combine
+@_exported import UIKit
 @_exported import EmptyUIKit
-import UIKit
+@_exported import Combine
 import MJRefresh
 
-public enum TaskUIKitConfiguration {
+final public class Configuration {
+
+  public static let shared = Configuration()
 
 #if !targetEnvironment(macCatalyst)
-  public static var headerRefreshControlProvider: ((UIScrollView, @escaping() -> Void) -> RefreshControl)?
-  public static var footerRefreshControlProvider: ((UIScrollView, @escaping() -> Void) -> FiniteRefreshControl)?
+  public var headerRefreshControlProvider: ((UIScrollView, @escaping() -> Void) -> RefreshControl)?
+  public var footerRefreshControlProvider: ((UIScrollView, @escaping() -> Void) -> FiniteRefreshControl)?
 #endif
 
-  public static var emptyViewImageForEmpty: UIImage?
-  public static var emptyViewImageForError: UIImage?
+  public var emptyViewImageForEmpty: UIImage?
+  public var emptyViewImageForError: UIImage?
 }
 
 public enum TaskResult<Contents> {

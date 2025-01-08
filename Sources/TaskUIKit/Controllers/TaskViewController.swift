@@ -340,7 +340,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
 #if !targetEnvironment(macCatalyst)
   private func configureHeaderRefreshControl(for scrollView: UIScrollView) {
-    if let provider = TaskUIKitConfiguration.headerRefreshControlProvider {
+    if let provider = Configuration.shared.headerRefreshControlProvider {
       let header = provider(scrollView, { [weak self] in
         self?.reloadTasks(reset: false, animated: false)
       })
@@ -355,7 +355,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   }
 
   private func configureFooterRefreshControl(for scrollView: UIScrollView) {
-    if let provider = TaskUIKitConfiguration.footerRefreshControlProvider {
+    if let provider = Configuration.shared.footerRefreshControlProvider {
       let footer = provider(scrollView, { [weak self] in
         self?.loadTasksForNextPage()
       })
@@ -375,7 +375,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   // MARK: Empty View
 
   open func configureEmptyView(_ emptyView: EmptyView, for error: Error) {
-    emptyView.image = TaskUIKitConfiguration.emptyViewImageForError
+    emptyView.image = Configuration.shared.emptyViewImageForError
     emptyView.text = NSLocalizedString("Unable to Load", bundle: Bundle.module, comment: "")
     emptyView.secondaryText = error.localizedDescription
     emptyView.button.setTitle(NSLocalizedString("Reload", bundle: Bundle.module, comment: ""), for: .normal)
@@ -383,7 +383,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   }
 
   open func configureEmptyViewForEmpty(_ emptyView: EmptyView) {
-    emptyView.image = TaskUIKitConfiguration.emptyViewImageForEmpty
+    emptyView.image = Configuration.shared.emptyViewImageForEmpty
     emptyView.text = NSLocalizedString("No Content", bundle: Bundle.module, comment: "")
   }
 
