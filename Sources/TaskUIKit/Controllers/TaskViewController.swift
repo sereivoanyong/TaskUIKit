@@ -150,7 +150,8 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
             reloadTasks(reset: false, animated: true)
           case .loadFromCacheThenReload:
             if let cachedContents = loadContents(for: .cache), !isNilOrEmpty(cachedContents) {
-              applyData(.cache(cachedContents)) { [unowned self] in
+              applyData(.cache(cachedContents)) { [weak self] in
+                guard let self else { return }
                 emptyView.reload()
                 reloadTasks(reset: false, animated: false)
                 /*
@@ -260,7 +261,8 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     case .success(let responseContents, let responsePaging, let userInfo):
       currentPaging = responsePaging
       currentError = nil
-      applyData(.response(responseContents, isInitial: pagingForNext == nil, userInfo)) { [unowned self] in
+      applyData(.response(responseContents, isInitial: pagingForNext == nil, userInfo)) { [weak self] in
+        guard let self else { return }
         tasksDidEnd(contents: responseContents, paging: responsePaging)
       }
 
@@ -268,7 +270,8 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
       currentError = error
       if pagingForNext == nil {
         if let cachedContents = loadContents(for: .cache), !isNilOrEmpty(cachedContents) {
-          applyData(.cache(cachedContents)) { [unowned self] in
+          applyData(.cache(cachedContents)) { [weak self] in
+            guard let self else { return }
             tasksDidEnd(contents: cachedContents, paging: nil)
           }
           return
