@@ -17,7 +17,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   public enum InitialAction {
 
     case reload
-    case loadFromCacheOrReload
+    case loadFromCacheThenReload
   }
 
   public enum Source {
@@ -148,11 +148,12 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
           switch initialAction {
           case .reload:
             reloadTasks(reset: false, animated: true)
-          case .loadFromCacheOrReload:
+          case .loadFromCacheThenReload:
             if let cachedContents = loadContents(for: .cache), !isNilOrEmpty(cachedContents) {
               applyData(.cache(cachedContents)) { [unowned self] in
                 emptyView.reload()
-
+                reloadTasks(reset: false, animated: false)
+                /*
 #if !targetEnvironment(macCatalyst)
                 if let refreshingScrollView {
                   if headerRefreshControlIfLoaded == nil && automaticallyConfiguresHeaderRefreshControl {
@@ -160,6 +161,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
                   }
                 }
 #endif
+                 */
               }
             } else {
               reloadTasks(reset: false, animated: true)
