@@ -5,7 +5,7 @@
 //  Created by Sereivoan Yong on 12/18/24.
 //
 
-import UIKitUtilities
+import UIKit
 
 open class TaskContainerViewController<Contents>: TaskViewController<Contents> {
 
@@ -24,17 +24,18 @@ open class TaskContainerViewController<Contents>: TaskViewController<Contents> {
       if let newViewController = viewController(for: contents.contents, reusingViewController: currentViewController) {
         viewController = newViewController
         if newViewController != currentViewController {
-          currentViewController?.removeFromParentIncludingView()
-          addChildIncludingView(newViewController) { view, childView in
-            addView(childView, to: view)
-          }
+          currentViewController?.remove()
+
+          addChild(newViewController)
+          addView(newViewController.view, to: view)
+          newViewController.didMove(toParent: self)
         }
       } else {
-        viewController?.removeFromParentIncludingView()
+        viewController?.remove()
         viewController = nil
       }
     } else {
-      viewController?.removeFromParentIncludingView()
+      viewController?.remove()
       viewController = nil
     }
     completion()
@@ -46,7 +47,16 @@ open class TaskContainerViewController<Contents>: TaskViewController<Contents> {
 
   open func addView(_ childView: UIView, to view: UIView) {
     childView.frame = view.bounds
-    childView.autoresizingMask = .flexibleSize
+    childView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     view.insertSubview(childView, at: 0)
+  }
+}
+
+extension UIViewController {
+
+  fileprivate func remove() {
+    willMove(toParent: nil)
+    view.removeFromSuperview()
+    removeFromParent()
   }
 }

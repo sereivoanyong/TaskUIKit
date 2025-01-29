@@ -10,17 +10,23 @@ let package = Package(
   ],
   products: [
     .library(name: "TaskUIKit", targets: ["TaskUIKit"]),
+    .library(name: "TaskRealmUIKit", targets: ["TaskRealmUIKit", "TaskUIKit"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/CoderMJLee/MJRefresh", .upToNextMajor(from: "3.7.9")),
     .package(url: "https://github.com/sereivoanyong/EmptyUIKit", branch: "main"),
-    .package(url: "https://github.com/sereivoanyong/SwiftKit", branch: "main")
+    .package(url: "https://github.com/CoderMJLee/MJRefresh", .upToNextMajor(from: "3.7.9")),
+    .package(url: "https://github.com/realm/realm-swift", from: "20.0.1"),
+    .package(url: "https://github.com/sereivoanyong/SwiftKit", branch: "main"),
   ],
   targets: [
     .target(name: "TaskUIKit", dependencies: [
-      "MJRefresh",
       "EmptyUIKit",
-      .product(name: "UIKitUtilities", package: "SwiftKit")
+      "MJRefresh",
+    ]),
+    .target(name: "TaskRealmUIKit", dependencies: [
+      "TaskUIKit",
+      .product(name: "RealmSwift", package: "realm-swift"),
+      .product(name: "UIKitUtilities", package: "SwiftKit"),
     ]),
   ]
 )
