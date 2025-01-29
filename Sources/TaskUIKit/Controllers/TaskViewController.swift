@@ -41,7 +41,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     }
   }
 
-  open private(set) var isFirstViewAppear: Bool = true
+  open private(set) var isViewWillAppearCalled: Bool = false
 
   func isNilOrEmpty(_ contents: Contents?) -> Bool {
     if let contents {
@@ -136,11 +136,11 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
   // MARK: View Lifecycle
 
-  open override func viewIsAppearing(_ animated: Bool) {
-    super.viewIsAppearing(animated)
+  open override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
 
-    if isFirstViewAppear {
-      isFirstViewAppear = false
+    if !isViewWillAppearCalled {
+      isViewWillAppearCalled = true
       if initialError != nil {
         emptyView.reload()
       } else {
