@@ -355,6 +355,8 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
       let header = MJRefreshNormalHeader { [weak self] in
         self?.reloadTasks(reset: false, animated: false)
       }
+      header.stateLabel?.isHidden = true
+      header.lastUpdatedTimeLabel?.isHidden = true
       scrollView.mj_header = header
       headerRefreshControlIfLoaded = header
     }
