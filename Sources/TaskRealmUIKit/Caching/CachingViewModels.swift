@@ -8,30 +8,30 @@
 import Foundation
 import Combine
 
-open class CachingViewModels<Objects: Collection, ViewModel> where Objects.Element: Identifiable, Objects.Index == Int {
+open class CachingViewModels<Collection: Swift.Collection, ViewModel> where Collection.Index == Int {
 
-  public typealias Object = Objects.Element
+  public typealias Object = Collection.Element
 
-  open var objects: Objects? {
+  open var objects: Collection? {
     didSet {
       objectsDidChange(oldValue)
     }
   }
 
-  open var viewModels: [ViewModel] = []
+  open var viewModels: [Lazy<ViewModel>] = []
 
-  public let viewModelsSubject: CurrentValueSubject<[ViewModel], Never>
+  public let viewModelsSubject: CurrentValueSubject<[Lazy<ViewModel>], Never>
 
   open var viewModelProvider: (Object) -> ViewModel
 
   open var itemAdjustment: Int = 0
 
-  public init(objects: Objects? = nil, viewModelProvider: @escaping (Object) -> ViewModel) {
+  public init(objects: Collection? = nil, viewModelProvider: @escaping (Object) -> ViewModel) {
     self.objects = objects
     self.viewModelProvider = viewModelProvider
 
     if let objects {
-      viewModels = objects.map(viewModelProvider)
+      viewModels = .init(repeating: .uninitialized, count: objects.count)
     }
     self.viewModelsSubject = .init(viewModels)
   }
@@ -44,20 +44,25 @@ open class CachingViewModels<Objects: Collection, ViewModel> where Objects.Eleme
     return viewModelProvider(object)
   }
 
-  open subscript(index: Int) -> ViewModel {
-    return viewModels[index - itemAdjustment]
+  open func loadViewModels() -> [ViewModel] {
+    var loadedViewModels: [ViewModel] = []
+    if let objects {
+      assert(viewModels.count == objects.count)
+      for (index, object) in objects.enumerated() {
+        let loadedViewModel = viewModels[index].value(or: makeViewModel(for: object))
+        loadedViewModels.append(loadedViewModel)
+      }
+    }
+    return loadedViewModels
   }
 
-  open func objectsDidChange(_ previousObjects: Objects?) {
+  open subscript(index: Int) -> ViewModel {
+    return viewModels[index - itemAdjustment].value(or: makeViewModel(for: objects![index - itemAdjustment]))
+  }
+
+  open func objectsDidChange(_ previousObjects: Collection?) {
     if let objects {
-      viewModels = objects.map(viewModelProvider)
-//      let oldIds = Set(viewModels.keys)
-//      for objectToCreate in objects where !oldIds.contains(objectToCreate.id) {
-//        viewModels[objectToCreate.id] = viewModelProvider(objectToCreate)
-//      }
-//      for idToDelete in oldIds.subtracting(objects.map(\.id)) {
-//        viewModels[idToDelete] = nil
-//      }
+      viewModels = .init(repeating: .uninitialized, count: objects.count)
     } else {
       viewModels.removeAll()
     }
