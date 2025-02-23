@@ -5,9 +5,9 @@
 //  Created by Sereivoan Yong on 2/12/25.
 //
 
-import Foundation
+import UIKit
 
-public protocol StaticDataSource<SectionIdentifier, ItemIdentifier>: NSObject {
+public protocol StaticIdentifiableDataSource<SectionIdentifier, ItemIdentifier>: NSObject, UICollectionViewDataSource {
 
   associatedtype SectionIdentifier
 
@@ -18,8 +18,22 @@ public protocol StaticDataSource<SectionIdentifier, ItemIdentifier>: NSObject {
   func itemIdentifier(for indexPath: IndexPath) -> ItemIdentifier?
 }
 
+public protocol StaticDataSource<SectionIdentifier, Item>: StaticIdentifiableDataSource where Item.ID == ItemIdentifier {
+
+  associatedtype Item: Identifiable
+
+  func item(for indexPath: IndexPath) -> Item
+}
+
+extension StaticDataSource {
+
+  public func itemIdentifier(for indexPath: IndexPath) -> ItemIdentifier? {
+    return item(for: indexPath).id
+  }
+}
+
 import UIKit
 
 @available(iOS 15.0, *)
-extension UICollectionViewDiffableDataSource: StaticDataSource {
+extension UICollectionViewDiffableDataSource: StaticIdentifiableDataSource {
 }

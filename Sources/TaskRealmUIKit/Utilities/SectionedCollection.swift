@@ -17,6 +17,9 @@ public protocol SectionedCollection<SectionIdentifier, SectionElement>: Collecti
   associatedtype SectionElement
 }
 
+extension Array: IndexCollection {
+}
+
 import RealmSwift
 
 extension SectionedResults: SectionedCollection {

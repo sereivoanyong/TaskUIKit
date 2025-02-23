@@ -1,5 +1,5 @@
 //
-//  SectionedCachingViewModelDataSource.swift
+//  SectionedViewModelsDataSource.swift
 //  TaskUIKit
 //
 //  Created by Sereivoan Yong on 2/12/25.
@@ -8,7 +8,7 @@
 import UIKit
 import Combine
 
-open class SectionedCachingViewModelDataSource<SectionedItems: SectionedCollection, ViewModel>: NSObject, StaticDataSource, UICollectionViewDataSource where SectionedItems.SectionElement: Identifiable {
+open class SectionedViewModelsDataSource<SectionedItems: SectionedCollection, ViewModel>: NSObject, StaticDataSource, UICollectionViewDataSource where SectionedItems.SectionElement: Identifiable {
 
   public typealias SectionIdentifier = SectionedItems.SectionIdentifier
 
@@ -16,7 +16,7 @@ open class SectionedCachingViewModelDataSource<SectionedItems: SectionedCollecti
 
   public typealias Item = SectionedItems.SectionElement
 
-  public typealias CellProvider = (UICollectionView, IndexPath, Item) -> UICollectionViewCell
+  public typealias CellProvider = (UICollectionView, IndexPath, ViewModel) -> UICollectionViewCell
 
   open var sectionedItems: SectionedItems! {
     didSet {
@@ -24,7 +24,7 @@ open class SectionedCachingViewModelDataSource<SectionedItems: SectionedCollecti
     }
   }
 
-  open var viewModels: [[Lazy<ViewModel>]] = []
+  open var viewModels: [[Lazy<ViewModel>]]
 
   public let viewModelsSubject: CurrentValueSubject<[[Lazy<ViewModel>]], Never>
 
@@ -34,22 +34,23 @@ open class SectionedCachingViewModelDataSource<SectionedItems: SectionedCollecti
 
   open var itemAdjustment: Int = 0
 
-  weak open var collectionView: UICollectionView? {
-    didSet {
-      collectionView?.dataSource = self
-    }
-  }
+  weak public private(set) var collectionView: UICollectionView?
 
-  open var cellProvider: CellProvider?
+  public let cellProvider: CellProvider!
 
-  public init(sectionedItems: SectionedItems? = nil, viewModelProvider: @escaping (Item) -> ViewModel) {
+  public init(sectionedItems: SectionedItems? = nil, viewModelProvider: @escaping (Item) -> ViewModel, collectionView: UICollectionView? = nil, cellProvider: CellProvider? = nil) {
     self.sectionedItems = sectionedItems
-    self.viewModelProvider = viewModelProvider
-
-    if let sectionedItems {
-      viewModels = sectionedItems.map { [Lazy<ViewModel>](repeating: .uninitialized, count: $0.count) }
-    }
+    self.viewModels = sectionedItems.map { $0.map { [Lazy<ViewModel>](repeating: .uninitialized, count: $0.count) } } ?? []
     self.viewModelsSubject = .init(viewModels)
+    self.viewModelProvider = viewModelProvider
+    self.collectionView = collectionView
+    self.cellProvider = cellProvider
+    super.init()
+
+    if let collectionView {
+      collectionView.dataSource = self
+      collectionView.reloadData()
+    }
   }
 
   open func makeViewModel(for item: Item) -> ViewModel {
@@ -74,7 +75,7 @@ open class SectionedCachingViewModelDataSource<SectionedItems: SectionedCollecti
   }
 
   open subscript(indexPath: IndexPath) -> ViewModel {
-    return viewModels[indexPath.section - sectionAdjustment][indexPath.item - itemAdjustment].value(or: makeViewModel(for: item(for: indexPath)!))
+    return viewModels[indexPath.section - sectionAdjustment][indexPath.item - itemAdjustment].value(or: makeViewModel(for: item(for: indexPath)))
   }
 
   open func sectionedItemsDidChange(_ previousSectionedItems: SectionedItems?) {
@@ -84,6 +85,7 @@ open class SectionedCachingViewModelDataSource<SectionedItems: SectionedCollecti
       viewModels.removeAll()
     }
     viewModelsSubject.send(viewModels)
+    collectionView?.reloadData()
   }
 
   // MARK: Accessor
@@ -93,10 +95,10 @@ open class SectionedCachingViewModelDataSource<SectionedItems: SectionedCollecti
   }
 
   open func itemIdentifier(for indexPath: IndexPath) -> ItemIdentifier? {
-    return sectionedItems[indexPath.section - sectionAdjustment][indexPath.item - itemAdjustment].id
+    return item(for: indexPath).id
   }
 
-  open func item(for indexPath: IndexPath) -> Item? {
+  open func item(for indexPath: IndexPath) -> Item {
     return sectionedItems[indexPath.section - sectionAdjustment][indexPath.item - itemAdjustment]
   }
 
@@ -111,7 +113,7 @@ open class SectionedCachingViewModelDataSource<SectionedItems: SectionedCollecti
   }
 
   open func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-    let item = item(for: indexPath)!
-    return cellProvider!(collectionView, indexPath, item)
+    let cellViewModel = self[indexPath]
+    return cellProvider(collectionView, indexPath, cellViewModel)
   }
 }
