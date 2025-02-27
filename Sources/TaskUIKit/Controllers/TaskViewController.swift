@@ -249,7 +249,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   // MARK: Task Lifecycle
 
   func canProcess(_ result: TaskResult<Contents>) -> Bool {
-    if case .failure(let error) = result, let error = error as? CancelingError {
+    if case .failure(let error) = result, let error = error as? CancellingError {
       return !error.isCancelled
     }
     return true
