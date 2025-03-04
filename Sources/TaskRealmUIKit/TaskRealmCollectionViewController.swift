@@ -95,6 +95,7 @@ open class TaskRealmCollectionViewController<ViewModel: TaskRealmCollectionViewM
     viewModel.cellViewModels.objects = nil
   }
 
+  /// `completion` must be called at the end (usually) or deferred until data is applied. `completion` isn't called if self dealloc
   open override func applyData(_ contents: SourcedContents, completion: @escaping () -> Void) {
     switch contents {
     case .response(let newObjects, let isInitial, let userInfo):
@@ -113,7 +114,7 @@ open class TaskRealmCollectionViewController<ViewModel: TaskRealmCollectionViewM
     let newObjects = write(newObjects.array, userInfo: userInfo, in: realm)
     realm.commitAsyncWrite { [weak self] error in
       if let error {
-        print(error)
+        printIfDEBUG(error)
       }
       if let self {
         switch contentsStore {
@@ -127,8 +128,8 @@ open class TaskRealmCollectionViewController<ViewModel: TaskRealmCollectionViewM
         case .results:
           viewModel.cellViewModels.objects = loadContents(for: .response)
         }
+        completion()
       }
-      completion()
     }
   }
 

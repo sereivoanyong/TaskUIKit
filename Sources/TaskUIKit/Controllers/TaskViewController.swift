@@ -44,14 +44,17 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
 
   open private(set) var isViewWillAppearCalled: Bool = false
 
-  func isNilOrEmpty(_ contents: Contents?) -> Bool {
+  func isAllowed(_ value: Contents?) -> Bool {
     if let contents {
-      if let contents = contents as? any Collection, contents.isEmpty {
+      if allowsEmpty {
         return true
       }
-      return false
+      if let contents = contents as? any Collection, contents.isEmpty {
+        return false
+      }
+      return true
     }
-    return true
+    return false
   }
 
   open private(set) var cancellables: [AnyCancellable] = [] {
@@ -78,6 +81,8 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
   /// If `initialError` is `nil`, this property is performed.
   /// Set to `nil` to do nothing. We will have to manually reload task.
   open var initialAction: InitialAction? = .reload
+
+  open var allowsEmpty: Bool = false
 
   /// Returns the scroll view for pull-to-refresh
   open var refreshingScrollView: UIScrollView? {
@@ -150,7 +155,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
           case .reload:
             reloadTasks(reset: false, animated: true)
           case .loadFromCacheThenReload:
-            if let cachedContents = loadContents(for: .cache), !isNilOrEmpty(cachedContents) {
+            if let cachedContents = loadContents(for: .cache), isAllowed(cachedContents) {
               applyData(.cache(cachedContents)) { [weak self] in
                 guard let self else { return }
                 emptyView.reload()
@@ -195,7 +200,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     emptyView.reload()
 
     if animated {
-      if reset || isNilOrEmpty(contents){
+      if reset || !isAllowed(contents) {
         loadingIndicatorView.startAnimating()
       }
     }
@@ -270,7 +275,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     case .failure(let error):
       currentError = error
       if pagingForNext == nil {
-        if let cachedContents = loadContents(for: .cache), !isNilOrEmpty(cachedContents) {
+        if let cachedContents = loadContents(for: .cache), isAllowed(cachedContents) {
           applyData(.cache(cachedContents)) { [weak self] in
             guard let self else { return }
             tasksDidEnd(contents: cachedContents, paging: nil)
@@ -401,7 +406,7 @@ open class TaskViewController<Contents>: UIViewController, EmptyViewStateProvidi
     if isLoading {
       return nil
     }
-    if !isNilOrEmpty(contents) {
+    if isAllowed(contents) {
       return nil
     }
     if let currentError {
