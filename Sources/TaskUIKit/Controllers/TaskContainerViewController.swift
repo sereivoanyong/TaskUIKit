@@ -11,6 +11,8 @@ open class TaskContainerViewController<Contents>: TaskViewController<Contents> {
 
   open private(set) var viewController: UIViewController?
 
+  open var allowsEmpty: Bool = false
+
   private var _contents: Contents?
   open override var contents: Contents? {
     get { return _contents }
@@ -19,7 +21,7 @@ open class TaskContainerViewController<Contents>: TaskViewController<Contents> {
 
   open override func applyData(_ contents: SourcedContents, completion: @escaping () -> Void) {
     _contents = contents.contents
-    if !isNilOrEmpty(contents.contents) {
+    if isAllowed(contents.contents) {
       let currentViewController = viewController
       if let newViewController = viewController(for: contents.contents, reusingViewController: currentViewController) {
         viewController = newViewController
@@ -49,6 +51,19 @@ open class TaskContainerViewController<Contents>: TaskViewController<Contents> {
     childView.frame = view.bounds
     childView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     view.insertSubview(childView, at: 0)
+  }
+
+  func isAllowed(_ value: Contents?) -> Bool {
+    if let contents {
+      if allowsEmpty {
+        return true
+      }
+      if let contents = contents as? any Collection, contents.isEmpty {
+        return false
+      }
+      return true
+    }
+    return false
   }
 }
 
