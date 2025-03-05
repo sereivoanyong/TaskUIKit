@@ -51,7 +51,7 @@ open class RealmViewModelsDataSource<Object: ObjectBase & RealmCollectionValue &
         break
 
       case .update(_, let deletions, let insertions, _):
-        for index in deletions {
+        for index in deletions.reversed() {
           viewModels.remove(at: index)
         }
         for index in insertions {

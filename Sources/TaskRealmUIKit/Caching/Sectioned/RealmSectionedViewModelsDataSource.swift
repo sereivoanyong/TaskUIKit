@@ -50,7 +50,7 @@ open class RealmSectionedViewModelsDataSource<Key: _Persistable & Hashable, Obje
         break
 
       case .update(_, let deletions, let insertions, _, let sectionsToInsert, let sectionsToDelete):
-        for deletion in deletions {
+        for deletion in deletions.reversed() {
           viewModels[deletion.section].remove(at: deletion.item)
         }
         for insertion in insertions {
@@ -59,7 +59,7 @@ open class RealmSectionedViewModelsDataSource<Key: _Persistable & Hashable, Obje
         for sectionToInsert in sectionsToInsert {
           viewModels.insert([], at: sectionToInsert)
         }
-        for sectionToDelete in sectionsToDelete {
+        for sectionToDelete in sectionsToDelete.reversed() {
           viewModels.remove(at: sectionToDelete)
         }
         viewModelsSubject.send(viewModels)
