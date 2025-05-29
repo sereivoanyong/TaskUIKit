@@ -67,9 +67,6 @@ open class RealmCachingViewModels<Collection: RealmCollection, ViewModel>: Cachi
             } else {
               hasCollectionViewReloadedData = false
             }
-
-          case .error:
-            break
           }
         }
       } else {

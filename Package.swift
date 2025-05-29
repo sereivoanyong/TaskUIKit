@@ -15,7 +15,7 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/sereivoanyong/EmptyUIKit", branch: "main"),
     .package(url: "https://github.com/CoderMJLee/MJRefresh", .upToNextMajor(from: "3.7.9")),
-    .package(url: "https://github.com/realm/realm-swift", from: "20.0.1"),
+    .package(url: "https://github.com/sereivoanyong/realm-swift", branch: "sy/community"),
     .package(url: "https://github.com/sereivoanyong/SwiftKit", branch: "main"),
   ],
   targets: [

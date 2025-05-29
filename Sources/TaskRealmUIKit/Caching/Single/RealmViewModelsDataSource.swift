@@ -77,9 +77,6 @@ open class RealmViewModelsDataSource<Object: ObjectBase & RealmCollectionValue &
             }
           })
         }
-
-      case .error:
-        break
       }
     }
   }
